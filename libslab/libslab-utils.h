@@ -10,7 +10,7 @@
 G_BEGIN_DECLS
 
 char             *libslab_keyfile_get (GKeyFile *keyfile, const char *key);
-char             *libslab_keyfile_get_location (GKeyFile *keyfile);
+const char       *libslab_keyfile_get_location (GKeyFile *keyfile);
 char             *libslab_keyfile_get_locale (GKeyFile *keyfile, const char *key);
 
 gboolean          libslab_gtk_image_set_by_id (GtkImage *image, const gchar *id);

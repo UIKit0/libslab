@@ -603,6 +603,8 @@ generate_filtered_lists (gpointer catdata, gpointer user_data)
 	gchar *temp1, *temp2;
 	GList *launcher_list = data->launcher_list;
 
+	g_return_if_fail (launcher_list != NULL);
+
 	g_list_free (data->filtered_launcher_list);
 	data->filtered_launcher_list = NULL;
 
@@ -1265,6 +1267,8 @@ insert_launcher_into_category (CategoryData * cat_data, GKeyFile * desktop_item,
 	launcher =
 	  application_tile_new_full (libslab_keyfile_get_location (desktop_item),
 		app_data->icon_size, app_data->show_tile_generic_name, app_data->gconf_prefix);
+	g_return_if_fail (launcher != NULL);
+
 	gtk_widget_set_size_request (launcher, SIZING_TILE_WIDTH, -1);
 
 	filepath = libslab_keyfile_get (desktop_item, G_KEY_FILE_DESKTOP_KEY_EXEC);

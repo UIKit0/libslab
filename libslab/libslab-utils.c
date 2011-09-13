@@ -101,6 +101,8 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 		return NULL;
 
 	item = g_key_file_new();
+	g_object_set_data_full (G_OBJECT (item), "file", g_strdup (id), g_free);
+
 	g_key_file_load_from_file (item, id, 0, &error);
 
 	if (! error)
@@ -109,6 +111,22 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 		g_error_free (error);
 		error = NULL;
 	}
+
+	basename = g_strrstr (id, "/");
+
+	if (basename) {
+		basename++;
+
+		g_key_file_load_from_file (item, basename, 0, &error);
+
+		if (! error)
+			return item;
+		else {
+			g_error_free (error);
+			error = NULL;
+		}
+	}
+	g_object_unref (item);
 
 #ifdef FIXME_MORE_PORTING
 	item = gnme_desktop_item_new_from_file (id, 0, & error);
@@ -129,20 +147,6 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 		error = NULL;
 	}
 
-	basename = g_strrstr (id, "/");
-
-	if (basename) {
-		basename++;
-
-		item = gnme_desktop_item_new_from_basename (basename, 0, &error);
-
-		if (! error)
-			return item;
-		else {
-			g_error_free (error);
-			error = NULL;
-		}
-	}
 #endif
 
 	return NULL;
@@ -731,7 +735,7 @@ libslab_keyfile_get_locale (GKeyFile *keyfile, const char *key)
   return g_key_file_get_locale_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, key, NULL, NULL);
 }
 
-char *libslab_keyfile_get_location (GKeyFile *keyfile)
+const char *libslab_keyfile_get_location (GKeyFile *keyfile)
 {
-  return libslab_keyfile_get (keyfile, G_KEY_FILE_DESKTOP_KEY_URL);
+  return g_object_get_data (keyfile, "file");
 }

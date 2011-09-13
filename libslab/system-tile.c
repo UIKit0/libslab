@@ -61,7 +61,7 @@ system_tile_new (const gchar *desktop_item_id, const gchar *title)
 	SystemTile        *this;
 	SystemTilePrivate *priv;
 
-	gchar     *uri    = NULL;
+	gchar *uri        = NULL;
 	GtkWidget *header = NULL;
 
 	GtkMenu *context_menu;
@@ -84,7 +84,7 @@ system_tile_new (const gchar *desktop_item_id, const gchar *title)
 
 	if (desktop_item) {
 		image_id = libslab_keyfile_get_locale (desktop_item, "Icon");
-		uri      = libslab_keyfile_get (desktop_item, G_KEY_FILE_DESKTOP_KEY_URL);
+		uri      = g_strdup (libslab_keyfile_get_location (desktop_item));
 
 		if (title)
 			header_txt = g_strdup (title);

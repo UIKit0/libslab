@@ -105,7 +105,7 @@ menu_position_func (GtkMenu * menu, int *x, int *y, gboolean * push_in, gpointer
 	if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_RTL)
 	{
 		GtkRequisition req;
-		gtk_widget_size_request (GTK_WIDGET (menu), &req);
+		gtk_widget_get_preferred_size (GTK_WIDGET (menu), &req, NULL);
 		*x += allocation.width - req.width;
 	}
 

@@ -1073,7 +1073,7 @@ create_app_item (BookmarkAgent *this, const gchar *uri)
 	ditem = libslab_gnome_desktop_item_new_from_unknown_id (uri);
 
 	if (ditem) {
-		uri_new = libslab_keyfile_get_location (ditem);
+		uri_new = g_strdup (libslab_keyfile_get_location (ditem));
 		g_object_unref (ditem);
 	}
 

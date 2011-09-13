@@ -144,65 +144,9 @@ load_desktop_item_from_gconf_key (const gchar * key)
 	if (!id)
 		return NULL;
 
-	item = load_desktop_item_from_unknown (id);
+	item = libslab_gnome_desktop_item_new_from_unknown_id (id);
 	g_free (id);
 	return item;
-}
-
-GKeyFile *
-load_desktop_item_from_unknown (const gchar *id)
-{
-	GKeyFile *item;
-	gchar            *basename;
-
-	GError *error = NULL;
-
-	g_warning ("more cut and paste crap");
-#ifdef FIXME_MORE_PORTING
-
-	item = gnome_desktop_item_new_from_uri (id, 0, &error);
-
-	if (! error)
-		return item;
-	else {
-		g_error_free (error);
-		error = NULL;
-	}
-
-	item = gnme_desktop_item_new_from_file (id, 0, &error);
-
-	if (! error)
-		return item;
-	else {
-		g_error_free (error);
-		error = NULL;
-	}
-
-	item = gnme_desktop_item_new_from_basename (id, 0, &error);
-
-	if (! error)
-		return item;
-	else {
-		g_error_free (error);
-		error = NULL;
-	}
-
-	basename = g_strrstr (id, "/");
-
-	if (basename) {
-		basename++;
-
-		item = gnme_desktop_item_new_from_basename (basename, 0, &error);
-
-		if (! error)
-			return item;
-		else {
-			g_error_free (error);
-			error = NULL;
-		}
-	}
-#endif
-	return NULL;
 }
 
 gchar *
@@ -307,10 +251,7 @@ open_desktop_item_help (GKeyFile * desktop_item)
 gboolean
 desktop_item_is_in_main_menu (GKeyFile * desktop_item)
 {
-	char *url = libslab_keyfile_get_location (desktop_item);
-	gboolean ret = desktop_uri_is_in_main_menu (url);
-	g_free (url);
-	return ret;
+	return desktop_uri_is_in_main_menu (libslab_keyfile_get_location (desktop_item));
 }
 
 gboolean

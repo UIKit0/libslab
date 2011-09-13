@@ -50,6 +50,8 @@ slab_section_set_title_color (GtkWidget * widget)
 {
 	GtkStyle *style;
 
+	g_warning ("set_title_color");
+#ifdef PORTING_MORE
 	style = gtk_widget_get_style (widget);
 
 	switch (SLAB_SECTION (widget)->style)
@@ -69,6 +71,7 @@ slab_section_set_title_color (GtkWidget * widget)
 	default:
 		g_assert_not_reached ();
 	}
+#endif
 }
 
 static void

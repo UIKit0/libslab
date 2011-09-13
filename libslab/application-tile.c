@@ -147,7 +147,7 @@ application_tile_new_full (const gchar *desktop_item_id,
 
 	GKeyFile *desktop_item;
 
-	desktop_item = load_desktop_item_from_unknown (desktop_item_id);
+	desktop_item = libslab_gnome_desktop_item_new_from_unknown_id (desktop_item_id);
 
 	gchar *type = NULL;
 	if (
@@ -156,8 +156,7 @@ application_tile_new_full (const gchar *desktop_item_id,
 								  G_KEY_FILE_DESKTOP_KEY_TYPE)),
 				     G_KEY_FILE_DESKTOP_TYPE_APPLICATION))
 	{
-	  uri = libslab_keyfile_get (desktop_item,
-				      G_KEY_FILE_DESKTOP_KEY_URL);
+	  uri = libslab_keyfile_get_location (desktop_item);
         }
 	g_free (type);
 
@@ -315,8 +314,7 @@ application_tile_setup (ApplicationTile *this, const gchar *gconf_prefix)
 
 
 	if (! priv->desktop_item) {
-		priv->desktop_item = load_desktop_item_from_unknown (TILE (this)->uri);
-
+		priv->desktop_item = libslab_gnome_desktop_item_new_from_unknown_id (TILE (this)->uri);
 		if (! priv->desktop_item)
 			return;
 	}

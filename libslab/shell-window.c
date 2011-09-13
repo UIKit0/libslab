@@ -141,6 +141,7 @@ shell_window_paint_window (GtkWidget * widget, GdkEventExpose * event, gpointer 
 
 	gtk_widget_get_allocation (left_pane, &allocation);
 
+#ifdef PORTING_MORE
 	/* draw left pane background */
 	gtk_paint_flat_box (gtk_widget_get_style (widget),
 	                    gtk_widget_get_window (widget),
@@ -148,6 +149,7 @@ shell_window_paint_window (GtkWidget * widget, GdkEventExpose * event, gpointer 
 	                    GTK_SHADOW_NONE, NULL, widget, "",
 	                    allocation.x, allocation.y,
 	                    allocation.width, allocation.height);
+#endif
 
 	return FALSE;
 }
