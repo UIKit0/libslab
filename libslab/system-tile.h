@@ -23,8 +23,6 @@
 
 #include <libslab/nameplate-tile.h>
 
-#include <libgnome/gnome-desktop-item.h>
-
 G_BEGIN_DECLS
 
 #define SYSTEM_TILE_TYPE         (system_tile_get_type ())

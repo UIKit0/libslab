@@ -279,13 +279,14 @@ nameplate_tile_drag_begin (GtkWidget * widget, GdkDragContext * context)
 		pixbuf = gtk_image_get_pixbuf (image);
 		if (pixbuf)
 			gtk_drag_set_icon_pixbuf (context, pixbuf, 0, 0);
-
 		break;
 
 	case GTK_IMAGE_ICON_NAME:
+	  g_warning ("port me !");
+#ifdef PORTING_REQUIRED
 		if (image->data.name.pixbuf)
 			gtk_drag_set_icon_pixbuf (context, image->data.name.pixbuf, 0, 0);
-
+#endif
 		break;
 
 	default:

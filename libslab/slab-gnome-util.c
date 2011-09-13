@@ -135,10 +135,10 @@ get_slab_gconf_slist (const gchar * key)
 	return value;
 }
 
-GnomeDesktopItem *
+GKeyFile *
 load_desktop_item_from_gconf_key (const gchar * key)
 {
-	GnomeDesktopItem *item;
+	GKeyFile *item;
 	gchar *id = get_slab_gconf_string (key);
 
 	if (!id)
@@ -149,14 +149,16 @@ load_desktop_item_from_gconf_key (const gchar * key)
 	return item;
 }
 
-GnomeDesktopItem *
+GKeyFile *
 load_desktop_item_from_unknown (const gchar *id)
 {
-	GnomeDesktopItem *item;
+	GKeyFile *item;
 	gchar            *basename;
 
 	GError *error = NULL;
 
+	g_warning ("more cut and paste crap");
+#ifdef FIXME_MORE_PORTING
 
 	item = gnome_desktop_item_new_from_uri (id, 0, &error);
 
@@ -167,7 +169,7 @@ load_desktop_item_from_unknown (const gchar *id)
 		error = NULL;
 	}
 
-	item = gnome_desktop_item_new_from_file (id, 0, &error);
+	item = gnme_desktop_item_new_from_file (id, 0, &error);
 
 	if (! error)
 		return item;
@@ -176,7 +178,7 @@ load_desktop_item_from_unknown (const gchar *id)
 		error = NULL;
 	}
 
-	item = gnome_desktop_item_new_from_basename (id, 0, &error);
+	item = gnme_desktop_item_new_from_basename (id, 0, &error);
 
 	if (! error)
 		return item;
@@ -190,7 +192,7 @@ load_desktop_item_from_unknown (const gchar *id)
 	if (basename) {
 		basename++;
 
-		item = gnome_desktop_item_new_from_basename (basename, 0, &error);
+		item = gnme_desktop_item_new_from_basename (basename, 0, &error);
 
 		if (! error)
 			return item;
@@ -199,12 +201,12 @@ load_desktop_item_from_unknown (const gchar *id)
 			error = NULL;
 		}
 	}
-
+#endif
 	return NULL;
 }
 
 gchar *
-get_package_name_from_desktop_item (GnomeDesktopItem * desktop_item)
+get_package_name_from_desktop_item (GKeyFile * desktop_item)
 {
 	gchar *argv[6];
 	gchar *package_name;
@@ -215,7 +217,7 @@ get_package_name_from_desktop_item (GnomeDesktopItem * desktop_item)
 	argv[1] = "-qf";
 	argv[2] = "--qf";
 	argv[3] = "%{NAME}";
-	argv[4] = g_filename_from_uri (gnome_desktop_item_get_location (desktop_item), NULL, NULL);
+	argv[4] = g_filename_from_uri (libslab_keyfile_get_location (desktop_item), NULL, NULL);
 	argv[5] = NULL;
 
 	error = NULL;
@@ -237,20 +239,23 @@ get_package_name_from_desktop_item (GnomeDesktopItem * desktop_item)
 }
 
 gboolean
-open_desktop_item_exec (GnomeDesktopItem * desktop_item)
+open_desktop_item_exec (GKeyFile * desktop_item)
 {
 	GError *error = NULL;
 
 	if (!desktop_item)
 		return FALSE;
 
+	g_warning ("Item exec");
+#ifdef FIXME_MORE_PORTING
 	gnome_desktop_item_launch (desktop_item, NULL, GNOME_DESKTOP_ITEM_LAUNCH_ONLY_ONE, &error);
+#endif
 
 	if (error)
 	{
 		g_warning ("error launching %s [%s]\n",
-			gnome_desktop_item_get_location (desktop_item), error->message);
-
+			   libslab_keyfile_get_location (desktop_item),
+			   error->message);
 		g_error_free (error);
 		return FALSE;
 	}
@@ -259,9 +264,9 @@ open_desktop_item_exec (GnomeDesktopItem * desktop_item)
 }
 
 gboolean
-open_desktop_item_help (GnomeDesktopItem * desktop_item)
+open_desktop_item_help (GKeyFile * desktop_item)
 {
-	const gchar *doc_path;
+	gchar *doc_path;
 	gchar *help_uri;
 
 	GError *error;
@@ -269,7 +274,7 @@ open_desktop_item_help (GnomeDesktopItem * desktop_item)
 	if (!desktop_item)
 		return FALSE;
 
-	doc_path = gnome_desktop_item_get_string (desktop_item, "DocPath");
+	doc_path = libslab_keyfile_get (desktop_item, "DocPath");
 
 	if (doc_path)
 	{
@@ -281,22 +286,31 @@ open_desktop_item_help (GnomeDesktopItem * desktop_item)
 			g_warning ("error opening %s [%s]\n", help_uri, error->message);
 
 			g_free (help_uri);
+			g_free (doc_path);
 			g_error_free (error);
 			return FALSE;
 		}
 
+		g_free (doc_path);
 		g_free (help_uri);
 	}
 	else
+	{
+		g_free (doc_path);
 		return FALSE;
+	}
+	g_free (doc_path);
 
 	return TRUE;
 }
 
 gboolean
-desktop_item_is_in_main_menu (GnomeDesktopItem * desktop_item)
+desktop_item_is_in_main_menu (GKeyFile * desktop_item)
 {
-	return desktop_uri_is_in_main_menu (gnome_desktop_item_get_location (desktop_item));
+	char *url = libslab_keyfile_get_location (desktop_item);
+	gboolean ret = desktop_uri_is_in_main_menu (url);
+	g_free (url);
+	return ret;
 }
 
 gboolean

@@ -19,14 +19,12 @@
  */
 
 #include <gtk/gtk.h>
-#include <libgnome/gnome-desktop-item.h>
 
 #include "app-shell.h"
 #include "app-resizer.h"
 
 static void app_resizer_class_init (AppResizerClass *);
 static void app_resizer_init (AppResizer *);
-static void app_resizer_destroy (GtkObject *);
 
 static void app_resizer_size_allocate (GtkWidget * resizer, GtkAllocation * allocation);
 static gboolean app_resizer_paint_window (GtkWidget * widget, GdkEventExpose * event,
@@ -39,8 +37,6 @@ static void
 app_resizer_class_init (AppResizerClass * klass)
 {
 	GtkWidgetClass *widget_class;
-
-	((GtkObjectClass *) klass)->destroy = app_resizer_destroy;
 
 	widget_class = GTK_WIDGET_CLASS (klass);
 	widget_class->size_allocate = app_resizer_size_allocate;
@@ -286,11 +282,6 @@ app_resizer_new (GtkVBox * child, gint initial_num_columns, gboolean homogeneous
 	return GTK_WIDGET (widget);
 }
 
-static void
-app_resizer_destroy (GtkObject * obj)
-{
-}
-
 void
 app_resizer_set_vadjustment_value (GtkWidget * widget, gdouble value)
 {
@@ -316,6 +307,8 @@ app_resizer_paint_window (GtkWidget * widget, GdkEventExpose * event, AppShellDa
 	printf("Allocation:%d, %d, %d, %d\n\n", widget->allocation.x, widget->allocation.y, widget->allocation.width, widget->allocation.height);
 	*/
 
+  g_warning ("GTK3ME: No gdk to draw rectangles with");
+#ifdef DISABLED_FOR_NOW
 	gdk_draw_rectangle (gtk_layout_get_bin_window (GTK_LAYOUT (widget)),
 	                    gtk_widget_get_style (widget)->base_gc[GTK_STATE_NORMAL],
 	                    TRUE, event->area.x, event->area.y,
@@ -335,6 +328,7 @@ app_resizer_paint_window (GtkWidget * widget, GdkEventExpose * event, AppShellDa
 		                    allocation.width,	/* drawing with our coordinates here to draw all the way to the edge. */
 		                    selected_allocation.height);
 	}
+#endif
 
 	return FALSE;
 }

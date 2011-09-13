@@ -88,19 +88,20 @@ libslab_gtk_image_set_by_id (GtkImage *image, const gchar *id)
 	return found;
 }
 
-GnomeDesktopItem *
+GKeyFile *
 libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 {
-	GnomeDesktopItem *item;
+	GKeyFile *item;
 	gchar            *basename;
 
 	GError *error = NULL;
 
-
+	g_warning ("Un-believable cut & paste here");
 	if (! id)
 		return NULL;
 
-	item = gnome_desktop_item_new_from_uri (id, 0, & error);
+	item = g_key_file_new();
+	g_key_file_load_from_file (item, id, 0, &error);
 
 	if (! error)
 		return item;
@@ -109,7 +110,8 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 		error = NULL;
 	}
 
-	item = gnome_desktop_item_new_from_file (id, 0, & error);
+#ifdef FIXME_MORE_PORTING
+	item = gnme_desktop_item_new_from_file (id, 0, & error);
 
 	if (! error)
 		return item;
@@ -118,7 +120,7 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 		error = NULL;
 	}
 
-	item = gnome_desktop_item_new_from_basename (id, 0, & error);
+	item = gnme_desktop_item_new_from_basename (id, 0, & error);
 
 	if (! error)
 		return item;
@@ -132,7 +134,7 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 	if (basename) {
 		basename++;
 
-		item = gnome_desktop_item_new_from_basename (basename, 0, &error);
+		item = gnme_desktop_item_new_from_basename (basename, 0, &error);
 
 		if (! error)
 			return item;
@@ -141,23 +143,26 @@ libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
 			error = NULL;
 		}
 	}
+#endif
 
 	return NULL;
 }
 
 gboolean
-libslab_gnome_desktop_item_launch_default (GnomeDesktopItem *item)
+libslab_gnome_desktop_item_launch_default (GKeyFile *item)
 {
 	GError *error = NULL;
 
 	if (! item)
 		return FALSE;
 
-	gnome_desktop_item_launch (item, NULL, GNOME_DESKTOP_ITEM_LAUNCH_ONLY_ONE, & error);
+	g_warning ("desktop item launch !"); /* FIXME more porting required */
+	/*	gnme_desktop_item_launch (item, NULL, GNOME_DESKTOP_ITEM_LAUNCH_ONLY_ONE, & error); */
 
 	if (error) {
 		g_warning ("error launching %s [%s]\n",
-			gnome_desktop_item_get_location (item), error->message);
+			   libslab_keyfile_get_location (item),
+			   error->message);
 
 		g_error_free (error);
 
@@ -168,14 +173,13 @@ libslab_gnome_desktop_item_launch_default (GnomeDesktopItem *item)
 }
 
 gchar *
-libslab_gnome_desktop_item_get_docpath (GnomeDesktopItem *item)
+libslab_gnome_desktop_item_get_docpath (GKeyFile *item)
 {
 	gchar *path;
 
-	path = g_strdup (gnome_desktop_item_get_localestring (item, GNOME_DESKTOP_ITEM_DOC_PATH));
-
+	path = libslab_keyfile_get_locale (item, "DocPath");
 	if (! path)
-		path = g_strdup (gnome_desktop_item_get_localestring (item, ALTERNATE_DOCPATH_KEY));
+		path = libslab_keyfile_get_locale (item, ALTERNATE_DOCPATH_KEY);
 
 	return path;
 }
@@ -190,12 +194,9 @@ libslab_get_current_screen (void)
 	GdkScreen *screen = NULL;
 
 	event = gtk_get_current_event ();
-	if (event) {
-		if (event->any.window)
-			screen = gdk_drawable_get_screen (GDK_DRAWABLE (event->any.window));
-
-		gdk_event_free (event);
-	}
+	if (event)
+		screen = gdk_event_get_screen (event);
+	gdk_event_free (event);
 
 	if (!screen)
 		screen = gdk_screen_get_default ();
@@ -204,7 +205,7 @@ libslab_get_current_screen (void)
 }
 
 gboolean
-libslab_gnome_desktop_item_open_help (GnomeDesktopItem *item)
+libslab_gnome_desktop_item_open_help (GKeyFile *item)
 {
 	gchar *doc_path;
 	gchar *help_uri;
@@ -497,8 +498,8 @@ libslab_handle_g_error (GError **error, const gchar *msg_format, ...)
 gboolean
 libslab_desktop_item_is_a_terminal (const gchar *uri)
 {
-	GnomeDesktopItem *d_item;
-	const gchar      *categories;
+	GKeyFile *d_item;
+	gchar *categories;
 
 	gboolean is_terminal = FALSE;
 
@@ -508,11 +509,11 @@ libslab_desktop_item_is_a_terminal (const gchar *uri)
 	if (! d_item)
 		return FALSE;
 
-	categories = gnome_desktop_item_get_string (d_item, GNOME_DESKTOP_ITEM_CATEGORIES);
-
+	categories = libslab_keyfile_get (d_item, G_KEY_FILE_DESKTOP_KEY_CATEGORIES);
 	is_terminal = (categories && strstr (categories, DESKTOP_ITEM_TERMINAL_EMULATOR_FLAG));
+	g_free (categories);
 
-	gnome_desktop_item_unref (d_item);
+	g_object_unref (d_item);
 
 	return is_terminal;
 }
@@ -520,18 +521,20 @@ libslab_desktop_item_is_a_terminal (const gchar *uri)
 gboolean
 libslab_desktop_item_is_logout (const gchar *uri)
 {
-	GnomeDesktopItem *d_item;
+	GKeyFile *d_item;
 	gboolean is_logout = FALSE;
-
+	gchar *item_name;
 
 	d_item = libslab_gnome_desktop_item_new_from_unknown_id (uri);
 
 	if (! d_item)
 		return FALSE;
 
-	is_logout = strstr ("Logout", gnome_desktop_item_get_string (d_item, GNOME_DESKTOP_ITEM_NAME)) != NULL;
+	item_name = libslab_keyfile_get (d_item, G_KEY_FILE_DESKTOP_KEY_NAME);
+	is_logout = strstr ("Logout", item_name) != NULL;
+	g_free (item_name);
 
-	gnome_desktop_item_unref (d_item);
+	g_object_unref (d_item);
 
 	return is_logout;
 }
@@ -539,18 +542,20 @@ libslab_desktop_item_is_logout (const gchar *uri)
 gboolean
 libslab_desktop_item_is_lockscreen (const gchar *uri)
 {
-	GnomeDesktopItem *d_item;
+	GKeyFile *d_item;
 	gboolean is_logout = FALSE;
-
+	gchar *item_name;
 
 	d_item = libslab_gnome_desktop_item_new_from_unknown_id (uri);
 
 	if (! d_item)
 		return FALSE;
 
-	is_logout = strstr ("Lock Screen", gnome_desktop_item_get_string (d_item, GNOME_DESKTOP_ITEM_NAME)) != NULL;
+	item_name = libslab_keyfile_get (d_item, G_KEY_FILE_DESKTOP_KEY_NAME);
+	is_logout = strstr ("Lock Screen", item_name) != NULL;
+	g_free (item_name);
 
-	gnome_desktop_item_unref (d_item);
+	g_object_unref (d_item);
 
 	return is_logout;
 }
@@ -560,7 +565,6 @@ libslab_string_replace_once (const gchar *string, const gchar *key, const gchar 
 {
 	GString *str_built;
 	gint pivot;
-
 
 	pivot = strstr (string, key) - string;
 
@@ -713,4 +717,21 @@ libslab_checkpoint (const char *format, ...)
 
 	fputs ("\n", checkpoint_file);
 	fflush (checkpoint_file);
+}
+
+char *
+libslab_keyfile_get (GKeyFile *keyfile, const char *key)
+{
+  return g_key_file_get_value (keyfile, G_KEY_FILE_DESKTOP_GROUP, key, NULL);
+}
+
+char *
+libslab_keyfile_get_locale (GKeyFile *keyfile, const char *key)
+{
+  return g_key_file_get_locale_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, key, NULL, NULL);
+}
+
+char *libslab_keyfile_get_location (GKeyFile *keyfile)
+{
+  return libslab_keyfile_get (keyfile, G_KEY_FILE_DESKTOP_KEY_URL);
 }

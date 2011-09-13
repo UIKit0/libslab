@@ -37,7 +37,7 @@ static void nld_search_entry_init (NldSearchEntry *);
 static void nld_search_entry_finalize (GObject *);
 
 static void nld_search_entry_realize (GtkWidget * widget);
-static gboolean nld_search_entry_expose_event (GtkWidget * widget, GdkEventExpose * event);
+static gboolean nld_search_entry_draw (GtkWidget * widget, cairo_t *cr);
 
 G_DEFINE_TYPE (NldSearchEntry, nld_search_entry, GTK_TYPE_ENTRY)
 
@@ -49,7 +49,7 @@ static void nld_search_entry_class_init (NldSearchEntryClass * nld_search_entry_
 	g_type_class_add_private (nld_search_entry_class, sizeof (NldSearchEntryPrivate));
 
 	widget_class->realize = nld_search_entry_realize;
-	widget_class->expose_event = nld_search_entry_expose_event;
+	widget_class->draw = nld_search_entry_draw;
 
 	g_obj_class->finalize = nld_search_entry_finalize;
 }
@@ -90,6 +90,7 @@ nld_search_entry_realize (GtkWidget * widget)
 
 	GTK_WIDGET_CLASS (nld_search_entry_parent_class)->realize (widget);
 
+#ifdef MORE_PORTING_FUN
 	gdk_window_get_geometry (gtk_entry_get_text_window (GTK_ENTRY (widget)),
 	                         NULL, NULL, NULL, &height, NULL);
 
@@ -112,14 +113,19 @@ nld_search_entry_realize (GtkWidget * widget)
 		g_object_unref (priv->watermark);
 	priv->watermark = rsvg_handle_get_pixbuf (rsvg);
 	rsvg_handle_free (rsvg);
+#endif
+	g_warning ("missing svg entry fun");
 }
 
 static gboolean
-nld_search_entry_expose_event (GtkWidget * widget, GdkEventExpose * event)
+nld_search_entry_draw (GtkWidget *widget, cairo_t *cr)
 {
 	NldSearchEntryPrivate *priv = NLD_SEARCH_ENTRY_GET_PRIVATE (widget);
-	GTK_WIDGET_CLASS (nld_search_entry_parent_class)->expose_event (widget, event);
 
+	GTK_WIDGET_CLASS (nld_search_entry_parent_class)->draw (widget, cr);
+
+  g_warning ("GTK3ME: No gdk to draw pixbufs with");
+#ifdef DISABLED_FOR_NOW
 	if (event->window == gtk_entry_get_text_window (GTK_ENTRY (widget)))
 	{
 		int width, height, x;
@@ -135,6 +141,7 @@ nld_search_entry_expose_event (GtkWidget * widget, GdkEventExpose * event)
 			priv->watermark, 0, 0, x, 1, priv->width, priv->height,
 			GDK_RGB_DITHER_NORMAL, 0, 0);
 	}
+#endif
 
 	return FALSE;
 }

@@ -23,7 +23,6 @@
 
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <libgnome/gnome-desktop-item.h>
 
 G_BEGIN_DECLS
 
@@ -52,15 +51,15 @@ void free_slab_gconf_slist_of_strings (GSList * list);
 void free_list_of_strings (GList * list);
 gchar *get_slab_gconf_string (const gchar * key);
 
-GnomeDesktopItem *load_desktop_item_from_gconf_key (const gchar * key);
-GnomeDesktopItem *load_desktop_item_from_unknown (const gchar * id);
+GKeyFile *load_desktop_item_from_gconf_key (const gchar * key);
+GKeyFile *load_desktop_item_from_unknown (const gchar * id);
 
-gchar *get_package_name_from_desktop_item (GnomeDesktopItem * desktop_item);
+gchar *get_package_name_from_desktop_item (GKeyFile * desktop_item);
 
-gboolean open_desktop_item_exec (GnomeDesktopItem * desktop_item);
-gboolean open_desktop_item_help (GnomeDesktopItem * desktop_item);
+gboolean open_desktop_item_exec (GKeyFile * desktop_item);
+gboolean open_desktop_item_help (GKeyFile * desktop_item);
 
-gboolean desktop_item_is_in_main_menu (GnomeDesktopItem * desktop_item);
+gboolean desktop_item_is_in_main_menu (GKeyFile * desktop_item);
 gboolean desktop_uri_is_in_main_menu (const gchar * uri);
 
 gint desktop_item_location_compare (gconstpointer a, gconstpointer b);

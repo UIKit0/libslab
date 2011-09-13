@@ -712,8 +712,10 @@ create_subheader (const gchar *desc)
 	subheader = gtk_label_new (desc);
 	gtk_label_set_ellipsize (GTK_LABEL (subheader), PANGO_ELLIPSIZE_END);
 	gtk_misc_set_alignment (GTK_MISC (subheader), 0.0, 0.5);
+#ifdef MORE_PORTING_REQUIRED
 	gtk_widget_modify_fg (subheader, GTK_STATE_NORMAL,
 		&gtk_widget_get_style (subheader)->fg[GTK_STATE_INSENSITIVE]);
+#endif
 
 	return subheader;
 }
@@ -880,7 +882,7 @@ open_with_default_trigger (Tile *tile, TileEvent *event, TileAction *action)
 	if (priv->default_app)
 	{
 		uris = g_list_append (uris, TILE (tile)->uri);
-		launch_context = gdk_app_launch_context_new ();
+		launch_context = g_object_new (GDK_TYPE_APP_LAUNCH_CONTEXT, NULL);
 		gdk_app_launch_context_set_screen (launch_context,
 						   gtk_widget_get_screen (GTK_WIDGET (tile)));
 		gdk_app_launch_context_set_timestamp (launch_context,
@@ -1110,8 +1112,11 @@ send_to_trigger (Tile *tile, TileEvent *event, TileAction *action)
 		}
 	}
 
+	g_warning ("Spawn on screen !");
+#ifdef FIXME_MORE_PORTING
 	gdk_spawn_on_screen (gtk_widget_get_screen (GTK_WIDGET (tile)), NULL, argv, NULL,
 		G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, &error);
+#endif
 
 	if (error)
 		handle_g_error (&error, "error in %s", G_STRFUNC);

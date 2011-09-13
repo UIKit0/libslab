@@ -1,4 +1,4 @@
-AC_INIT([libslab], [2.30.1],
+AC_INIT([libslab], [3.0.0],
         [http://bugzilla.gnome.org/enter_bug.cgi?product=FIXME])
 AC_CONFIG_SRCDIR([libslab])
 
@@ -48,17 +48,16 @@ dnl Check that we meet the dependencies
 dnl ==============================================
 
 GLIB_REQUIRED=2.18.0
-GTK_REQUIRED=2.21.3
+GTK_REQUIRED=3.0.0
 
 AM_PATH_GLIB_2_0($GLIB_REQUIRED,,,gobject)
 
 MODULES="glib-2.0 >= $GLIB_REQUIRED	\
 	 gio-2.0 >= $GLIB_REQUIRED	\
 	 gobject-2.0			\
-	 gtk+-2.0 >= $GTK_REQUIRED	\
-	 gdk-2.0     			\
-	 gnome-desktop-2.0		\
+	 gtk+-3.0 >= $GTK_REQUIRED	\
 	 librsvg-2.0			\
+	 gnome-desktop-3.0		\
 	 gconf-2.0			\
 	 libgnome-menu"
 
@@ -108,7 +107,7 @@ AM_CONDITIONAL(LIBSLAB_FOR_INTERNAL_USE, test "yes" = "no")
 
 AC_CONFIG_FILES([
 Makefile
-libslab.pc
+libslab-3.pc
 libslab/Makefile
 po/Makefile.in
 ])

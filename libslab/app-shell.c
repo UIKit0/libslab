@@ -22,8 +22,8 @@
 #include <config.h>
 #endif
 
-#include <libgnome/gnome-desktop-item.h>
 #include <gio/gio.h>
+#include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -38,6 +38,7 @@
 #include "slab-section.h"
 #include "slab-gnome-util.h"
 #include "search-bar.h"
+#include "libslab-utils.h"
 
 #include "application-tile.h"
 #include "themed-icon.h"
@@ -60,7 +61,7 @@ static void generate_category (const char * category, GMenuTreeDirectory * root_
 static void generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data,
 	CategoryData * cat_data, gboolean recursive);
 static void generate_new_apps (AppShellData * app_data);
-static void insert_launcher_into_category (CategoryData * cat_data, GnomeDesktopItem * desktop_item,
+static void insert_launcher_into_category (CategoryData * cat_data, GKeyFile * desktop_item,
 	AppShellData * app_data);
 
 static gboolean main_keypress_callback (GtkWidget * widget, GdkEventKey * event,
@@ -107,7 +108,7 @@ show_shell (AppShellData * app_data)
 {
 	gtk_widget_show_all (app_data->main_app);
 	if (!app_data->static_actions)
-		gtk_widget_hide_all (app_data->actions_section);  /* don't show unless a launcher is selected */
+		gtk_widget_hide (app_data->actions_section);  /* don't show unless a launcher is selected */
 
 	if (app_data->main_app_window_shown_once)
 		gtk_window_move (GTK_WINDOW (app_data->main_app),
@@ -192,7 +193,7 @@ launch_selected_app (AppShellData * app_data)
 static gboolean
 main_keypress_callback (GtkWidget * widget, GdkEventKey * event, AppShellData * app_data)
 {
-	if (event->keyval == GDK_Return)
+	if (event->keyval == GDK_KEY_Return)
 	{
 		SlabSection *section = SLAB_SECTION (app_data->filter_section);
 		NldSearchBar *search_bar;
@@ -208,9 +209,9 @@ main_keypress_callback (GtkWidget * widget, GdkEventKey * event, AppShellData * 
 	}
 
 	/* quit on ESC or Ctl-W or Ctl-Q */
-	if (event->keyval == GDK_Escape ||
-		((event->keyval == GDK_w || event->keyval == GDK_W)	&& (event->state & GDK_CONTROL_MASK)) ||
-		((event->keyval == GDK_q || event->keyval == GDK_Q) && (event->state & GDK_CONTROL_MASK)))
+	if (event->keyval == GDK_KEY_Escape ||
+		((event->keyval == GDK_KEY_w || event->keyval == GDK_KEY_W)	&& (event->state & GDK_CONTROL_MASK)) ||
+		((event->keyval == GDK_KEY_q || event->keyval == GDK_KEY_Q) && (event->state & GDK_CONTROL_MASK)))
 	{
 		if (app_data->exit_on_close)
 			gtk_main_quit ();
@@ -374,7 +375,7 @@ relayout_shell (AppShellData * app_data)
 
 	gtk_widget_show_all (shell);
 	if (!app_data->static_actions && !app_data->last_clicked_launcher)
-		gtk_widget_hide_all (app_data->actions_section);  /* don't show unless a launcher is selected */
+		gtk_widget_hide (app_data->actions_section);  /* don't show unless a launcher is selected */
 }
 
 static GtkWidget *
@@ -560,7 +561,7 @@ handle_filter_changed_delayed (gpointer user_data)
 		gdk_cursor_new_for_display (gtk_widget_get_display (app_data->shell), GDK_WATCH);
 	gdk_window_set_cursor (gtk_widget_get_window (app_data->shell),
 	                       app_data->busy_cursor);
-	gdk_cursor_unref (app_data->busy_cursor);
+	g_object_unref (app_data->busy_cursor);
 
 	set_state (app_data, NULL);
 	app_resizer_set_vadjustment_value (app_data->category_layout, 0);
@@ -957,7 +958,7 @@ generate_category (const char * category, GMenuTreeDirectory * root_dir, AppShel
 }
 
 static gboolean
-check_specific_apps_hack (GnomeDesktopItem * item)
+check_specific_apps_hack (GKeyFile * item)
 {
 	static const gchar *COMMAND_LINE_LOCKDOWN_GCONF_KEY =
 		"/desktop/gnome/lockdown/disable_command_line";
@@ -965,8 +966,7 @@ check_specific_apps_hack (GnomeDesktopItem * item)
 	static gboolean got_lockdown_value = FALSE;
 	static gboolean command_line_lockdown;
 
-	gchar *path;
-	const char *exec;
+	gchar *path = NULL, *exec = NULL;
 
 	if (!got_lockdown_value)
 	{
@@ -975,13 +975,14 @@ check_specific_apps_hack (GnomeDesktopItem * item)
 	}
 
 	/* This seems like an ugly hack but it's the way it's currently done in the old control center */
-	exec = gnome_desktop_item_get_string (item, GNOME_DESKTOP_ITEM_EXEC);
+	exec = libslab_keyfile_get (item, G_KEY_FILE_DESKTOP_KEY_EXEC);
 
 	/* discard xscreensaver if gnome-screensaver is installed */
 	if ((exec && !strcmp (exec, "xscreensaver-demo"))
 		&& (path = g_find_program_in_path ("gnome-screensaver-preferences")))
 	{
 		g_free (path);
+		g_free (exec);
 		return TRUE;
 	}
 
@@ -990,6 +991,7 @@ check_specific_apps_hack (GnomeDesktopItem * item)
 		&& (path = g_find_program_in_path ("CASAManager.sh")))
 	{
 		g_free (path);
+		g_free (exec);
 		return TRUE;
 	}
 
@@ -997,21 +999,25 @@ check_specific_apps_hack (GnomeDesktopItem * item)
 	if (command_line_lockdown)
 	{
 		const gchar *categories =
-			gnome_desktop_item_get_string (item, GNOME_DESKTOP_ITEM_CATEGORIES);
+		  libslab_keyfile_get (item, G_KEY_FILE_DESKTOP_KEY_CATEGORIES);
 		if (g_strrstr (categories, COMMAND_LINE_LOCKDOWN_DESKTOP_CATEGORY))
 		{
 			/* printf ("eliminating %s\n", gnome_desktop_item_get_location (item)); */
+			g_free (path);
+			g_free (exec);
 			return TRUE;
 		}
 	}
 
+	g_free (path);
+	g_free (exec);
 	return FALSE;
 }
 
 static void
 generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data, CategoryData * cat_data, gboolean recursive)
 {
-	GnomeDesktopItem *desktop_item;
+	GKeyFile *desktop_item;
 	const gchar *desktop_file;
 	GSList *contents, *l;
 
@@ -1041,7 +1047,8 @@ generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data, Cate
 				g_hash_table_insert (app_data->hash, (gpointer) desktop_file,
 					(gpointer) desktop_file);
 			}
-			desktop_item = gnome_desktop_item_new_from_file (desktop_file, 0, NULL);
+			desktop_item = g_key_file_new();
+			g_key_file_load_from_file (desktop_item, desktop_file, 0, NULL);
 			if (!desktop_item)
 			{
 				g_critical ("Failure - gnome_desktop_item_new_from_file(%s)",
@@ -1050,7 +1057,7 @@ generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data, Cate
 			}
 			if (!check_specific_apps_hack (desktop_item))
 				insert_launcher_into_category (cat_data, desktop_item, app_data);
-			gnome_desktop_item_unref (desktop_item);
+			g_object_unref (desktop_item);
 			break;
 		default:
 			break;
@@ -1110,11 +1117,12 @@ generate_new_apps (AppShellData * app_data)
 			for (launchers = data->launcher_list; launchers; launchers = launchers->next)
 			{
 				Tile *tile = TILE (launchers->data);
-				GnomeDesktopItem *item =
+				GKeyFile *item =
 					application_tile_get_desktop_item (APPLICATION_TILE (tile));
-				const gchar *uri = gnome_desktop_item_get_location (item);
+				gchar *uri = libslab_keyfile_get_location (item);
 				g_string_append (gstr, uri);
 				g_string_append (gstr, separator);
+				g_free (uri);
 			}
 		}
 
@@ -1145,9 +1153,9 @@ generate_new_apps (AppShellData * app_data)
 		for (launchers = cat_data->launcher_list; launchers; launchers = launchers->next)
 		{
 			Tile *tile = TILE (launchers->data);
-			GnomeDesktopItem *item =
+			GKeyFile *item =
 				application_tile_get_desktop_item (APPLICATION_TILE (tile));
-			const gchar *uri = gnome_desktop_item_get_location (item);
+			gchar *uri = libslab_keyfile_get_location (item);
 			if (!g_hash_table_lookup (all_apps_cache, uri))
 			{
 				GFile *file;
@@ -1208,6 +1216,7 @@ generate_new_apps (AppShellData * app_data)
 					}
 				}
 			}
+			g_free (uri);
 		}
 	}
 	g_hash_table_destroy (new_apps_dups);
@@ -1240,7 +1249,7 @@ generate_new_apps (AppShellData * app_data)
 }
 
 static void
-insert_launcher_into_category (CategoryData * cat_data, GnomeDesktopItem * desktop_item,
+insert_launcher_into_category (CategoryData * cat_data, GKeyFile * desktop_item,
 	AppShellData * app_data)
 {
 	GtkWidget *launcher;
@@ -1254,12 +1263,11 @@ insert_launcher_into_category (CategoryData * cat_data, GnomeDesktopItem * deskt
 		icon_group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
 	launcher =
-		application_tile_new_full (gnome_desktop_item_get_location (desktop_item),
+	  application_tile_new_full (libslab_keyfile_get_location (desktop_item),
 		app_data->icon_size, app_data->show_tile_generic_name, app_data->gconf_prefix);
 	gtk_widget_set_size_request (launcher, SIZING_TILE_WIDTH, -1);
 
-	filepath =
-		g_strdup (gnome_desktop_item_get_string (desktop_item, GNOME_DESKTOP_ITEM_EXEC));
+	filepath = libslab_keyfile_get (desktop_item, G_KEY_FILE_DESKTOP_KEY_EXEC);
 	g_strdelimit (filepath, " ", '\0');	/* just want the file name - no args or replacements */
 	filename = g_strrstr (filepath, "/");
 	if (filename)

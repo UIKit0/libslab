@@ -1,7 +1,7 @@
 SUBDIRS = libslab po
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libslab.pc
+pkgconfig_DATA = libslab-3.pc
 
 GIT_START = b515f410cb472ae416995c5578d98bab7f80b504
 

@@ -44,12 +44,12 @@ static void update_user_list_menu_item (SystemTile *);
 static void agent_notify_cb (GObject *, GParamSpec *, gpointer);
 
 typedef struct {
-	GnomeDesktopItem *desktop_item;
+	GKeyFile *desktop_item;
 
 	BookmarkAgent       *agent;
 	BookmarkStoreStatus  agent_status;
 	gulong               notify_signal_id;
-	
+
 	gchar    *image_id;
 } SystemTilePrivate;
 
@@ -71,7 +71,7 @@ system_tile_new (const gchar *desktop_item_id, const gchar *title)
 	GtkWidget    *menu_item;
 	GtkContainer *menu_ctnr;
 
-	GnomeDesktopItem *desktop_item = NULL;
+	GKeyFile *desktop_item = NULL;
 	gchar            *image_id     = NULL;
 	gchar            *header_txt   = NULL;
 
@@ -83,14 +83,13 @@ system_tile_new (const gchar *desktop_item_id, const gchar *title)
 	desktop_item = libslab_gnome_desktop_item_new_from_unknown_id (desktop_item_id);
 
 	if (desktop_item) {
-		image_id = g_strdup (gnome_desktop_item_get_localestring (desktop_item, "Icon"));
-		uri      = g_strdup (gnome_desktop_item_get_location (desktop_item));
+		image_id = libslab_keyfile_get_locale (desktop_item, "Icon");
+		uri      = libslab_keyfile_get (desktop_item, G_KEY_FILE_DESKTOP_KEY_URL);
 
 		if (title)
 			header_txt = g_strdup (title);
 		else
-			header_txt = g_strdup (
-				gnome_desktop_item_get_localestring (desktop_item, "Name"));
+			header_txt = libslab_keyfile_get_locale (desktop_item, "Name");
 	}
 
 	if (! uri)
@@ -201,7 +200,7 @@ system_tile_finalize (GObject *g_obj)
         SystemTilePrivate *priv = PRIVATE (g_obj);
 
 	g_free (priv->image_id);
-	gnome_desktop_item_unref (priv->desktop_item);
+	g_object_unref (priv->desktop_item);
 
 	if (priv->notify_signal_id)
 		g_signal_handler_disconnect (priv->agent, priv->notify_signal_id);

@@ -70,11 +70,11 @@ static void run_package_management_command (ApplicationTile *, gchar *);
 static void update_user_list_menu_item (ApplicationTile *);
 static void agent_notify_cb (GObject *, GParamSpec *, gpointer);
 
-static StartupStatus get_desktop_item_startup_status (GnomeDesktopItem *);
+static StartupStatus get_desktop_item_startup_status (GKeyFile *);
 static void          update_startup_menu_item (ApplicationTile *);
 
 typedef struct {
-	GnomeDesktopItem *desktop_item;
+	GKeyFile *desktop_item;
 
 	gchar       *image_id;
 	GtkIconSize  image_size;
@@ -145,20 +145,25 @@ application_tile_new_full (const gchar *desktop_item_id,
 
 	const gchar *uri = NULL;
 
-	GnomeDesktopItem *desktop_item;
-
+	GKeyFile *desktop_item;
 
 	desktop_item = load_desktop_item_from_unknown (desktop_item_id);
 
+	gchar *type = NULL;
 	if (
 		desktop_item &&
-		gnome_desktop_item_get_entry_type (desktop_item) == GNOME_DESKTOP_ITEM_TYPE_APPLICATION
-	)
-		uri = gnome_desktop_item_get_location (desktop_item);
+		!g_ascii_strcasecmp ((type = libslab_keyfile_get (desktop_item,
+								  G_KEY_FILE_DESKTOP_KEY_TYPE)),
+				     G_KEY_FILE_DESKTOP_TYPE_APPLICATION))
+	{
+	  uri = libslab_keyfile_get (desktop_item,
+				      G_KEY_FILE_DESKTOP_KEY_URL);
+        }
+	g_free (type);
 
 	if (! uri) {
 		if (desktop_item)
-			gnome_desktop_item_unref (desktop_item);
+			g_object_unref (desktop_item);
 
 		return NULL;
 	}
@@ -211,7 +216,7 @@ application_tile_finalize (GObject *g_object)
 	}
 
 	if (priv->desktop_item) {
-		gnome_desktop_item_unref (priv->desktop_item);
+		g_object_unref (priv->desktop_item);
 		priv->desktop_item = NULL;
 	}
 	if (priv->image_id) {
@@ -316,12 +321,13 @@ application_tile_setup (ApplicationTile *this, const gchar *gconf_prefix)
 			return;
 	}
 
-	priv->image_id = g_strdup (gnome_desktop_item_get_localestring (priv->desktop_item, "Icon"));
+	priv->image_id = libslab_keyfile_get_locale (priv->desktop_item,
+						     G_KEY_FILE_DESKTOP_KEY_ICON);
 	image = themed_icon_new (priv->image_id, priv->image_size);
 
-	name = gnome_desktop_item_get_localestring (priv->desktop_item, "Name");
-	desc = gnome_desktop_item_get_localestring (priv->desktop_item, "GenericName");
-	comment = gnome_desktop_item_get_localestring (priv->desktop_item, "Comment");	
+	name = libslab_keyfile_get_locale (priv->desktop_item, "Name");
+	desc = libslab_keyfile_get_locale (priv->desktop_item, "GenericName");
+	comment = libslab_keyfile_get_locale (priv->desktop_item, "Comment");	
 
 	accessible = gtk_widget_get_accessible (GTK_WIDGET (this));
 	if (name)
@@ -388,7 +394,7 @@ application_tile_setup (ApplicationTile *this, const gchar *gconf_prefix)
 
 /* make help action */
 
-	if (gnome_desktop_item_get_string (priv->desktop_item, "DocPath")) {
+	if (libslab_keyfile_get (priv->desktop_item, "DocPath")) {
 		action = tile_action_new (
 			TILE (this), help_trigger, _("Help"),
 			TILE_ACTION_OPENS_NEW_WINDOW | TILE_ACTION_OPENS_HELP);
@@ -490,10 +496,12 @@ create_subheader (const gchar *desc)
 	subheader = gtk_label_new (desc);
 	gtk_label_set_ellipsize (GTK_LABEL (subheader), PANGO_ELLIPSIZE_END);
 	gtk_misc_set_alignment (GTK_MISC (subheader), 0.0, 0.5);
+#ifdef MORE_PORTING_REQUIRED
 	gtk_widget_modify_fg (
 		subheader,
 		GTK_STATE_NORMAL,
 		& gtk_widget_get_style (subheader)->fg [GTK_STATE_INSENSITIVE]);
+#endif
 
 	return subheader;
 }
@@ -675,8 +683,8 @@ add_to_startup_list (ApplicationTile *this)
 	gchar *dst_uri;
 
 	desktop_item_filename =
-		g_filename_from_uri (gnome_desktop_item_get_location (priv->desktop_item), NULL,
-		NULL);
+	  g_filename_from_uri (libslab_keyfile_get_location (priv->desktop_item), NULL,
+			       NULL);
 
 	g_return_if_fail (desktop_item_filename != NULL);
 
@@ -689,7 +697,7 @@ add_to_startup_list (ApplicationTile *this)
 
 	dst_filename = g_build_filename (startup_dir, desktop_item_basename, NULL);
 
-	src_uri = gnome_desktop_item_get_location (priv->desktop_item);
+	src_uri = libslab_keyfile_get_location (priv->desktop_item);
 	dst_uri = g_filename_to_uri (dst_filename, NULL, NULL);
 
 	copy_file (src_uri, dst_uri);
@@ -712,7 +720,7 @@ remove_from_startup_list (ApplicationTile *this)
 	gchar *src_filename;
 
 	ditem_filename =
-		g_filename_from_uri (gnome_desktop_item_get_location (priv->desktop_item), NULL,
+		g_filename_from_uri (libslab_keyfile_get_location (priv->desktop_item), NULL,
 		NULL);
 
 	g_return_if_fail (ditem_filename != NULL);
@@ -734,7 +742,7 @@ remove_from_startup_list (ApplicationTile *this)
 	g_free (src_filename);
 }
 
-GnomeDesktopItem *
+GKeyFile *
 application_tile_get_desktop_item (ApplicationTile *tile)
 {
 	return APPLICATION_TILE_GET_PRIVATE (tile)->desktop_item;
@@ -794,7 +802,7 @@ update_user_list_menu_item (ApplicationTile *this)
 }
 
 static StartupStatus
-get_desktop_item_startup_status (GnomeDesktopItem *desktop_item)
+get_desktop_item_startup_status (GKeyFile *desktop_item)
 {
 	gchar *filename;
 	gchar *basename;
@@ -805,8 +813,8 @@ get_desktop_item_startup_status (GnomeDesktopItem *desktop_item)
 
 	StartupStatus retval;
 	gint x;
-	
-	filename = g_filename_from_uri (gnome_desktop_item_get_location (desktop_item), NULL, NULL);
+
+	filename = g_filename_from_uri (libslab_keyfile_get_location (desktop_item), NULL, NULL);
 	if (!filename)
 		return APP_NOT_ELIGIBLE;
 	basename = g_path_get_basename (filename);

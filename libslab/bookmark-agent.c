@@ -1067,14 +1067,14 @@ create_app_item (BookmarkAgent *this, const gchar *uri)
 {
 	BookmarkAgentPrivate *priv = PRIVATE (this);
 
-	GnomeDesktopItem *ditem;
+	GKeyFile *ditem;
 	gchar *uri_new = NULL;
 
 	ditem = libslab_gnome_desktop_item_new_from_unknown_id (uri);
 
 	if (ditem) {
-		uri_new = g_strdup (gnome_desktop_item_get_location (ditem));
-		gnome_desktop_item_unref (ditem);
+		uri_new = libslab_keyfile_get_location (ditem);
+		g_object_unref (ditem);
 	}
 
 	if (! uri_new)

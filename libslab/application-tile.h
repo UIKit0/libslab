@@ -23,8 +23,6 @@
 
 #include <libslab/nameplate-tile.h>
 
-#include <libgnome/gnome-desktop-item.h>
-
 G_BEGIN_DECLS
 
 #define APPLICATION_TILE_TYPE         (application_tile_get_type ())
@@ -60,7 +58,7 @@ GtkWidget *application_tile_new (const gchar * desktop_item_id);
 GtkWidget *application_tile_new_full (const gchar * desktop_item_id,
 	GtkIconSize icon_size, gboolean show_generic_name, const gchar *gconf_prefix);
 
-GnomeDesktopItem *application_tile_get_desktop_item (ApplicationTile * tile);
+GKeyFile *application_tile_get_desktop_item (ApplicationTile * tile);
 
 G_END_DECLS
 #endif

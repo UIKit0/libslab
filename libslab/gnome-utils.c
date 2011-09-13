@@ -70,13 +70,25 @@ load_image_by_id (GtkImage * image, GtkIconSize size, const gchar * image_id)
 	return icon_exists;
 }
 
-GnomeDesktopItem *
+GKeyFile *
 load_desktop_item_by_unknown_id (const gchar * id)
 {
-	GnomeDesktopItem *item;
+	GKeyFile *item;
 	GError *error = NULL;
 
-	item = gnome_desktop_item_new_from_uri (id, 0, &error);
+	item = g_key_file_new();
+#warning url or path ?
+	g_key_file_load_from_file (item, id, 0, &error);
+
+	if (!error)
+		return item;
+	else
+	{
+		g_error_free (error);
+		error = NULL;
+	}
+#ifdef FIXME_MORE_PORTING
+	item = gnme_desktop_item_new_from_file (id, 0, &error);
 
 	if (!error)
 		return item;
@@ -86,7 +98,7 @@ load_desktop_item_by_unknown_id (const gchar * id)
 		error = NULL;
 	}
 
-	item = gnome_desktop_item_new_from_file (id, 0, &error);
+	item = gnme_desktop_item_new_from_basename (id, 0, &error);
 
 	if (!error)
 		return item;
@@ -96,16 +108,8 @@ load_desktop_item_by_unknown_id (const gchar * id)
 		error = NULL;
 	}
 
-	item = gnome_desktop_item_new_from_basename (id, 0, &error);
-
-	if (!error)
-		return item;
-	else
-	{
-		g_error_free (error);
-		error = NULL;
-	}
-
+#endif
+	g_warning ("More porting required here");
 	return NULL;
 }
 

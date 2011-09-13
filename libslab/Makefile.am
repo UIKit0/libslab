@@ -60,7 +60,7 @@ libslab_la_SOURCES =				\
 	tile.c
 
 if !LIBSLAB_FOR_INTERNAL_USE
-libslab_includedir = $(includedir)/libslab
+libslab_includedir = $(includedir)/libslab-3/libslab
 libslab_include_HEADERS = $(HEADER_FILES)
 
 libslab_la_LDFLAGS = -version-info $(LT_VERSION)

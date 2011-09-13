@@ -4,17 +4,20 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gconf/gconf-client.h>
-#include <libgnome/gnome-desktop-item.h>
 #define GNOME_DESKTOP_USE_UNSTABLE_API 1
-#include <libgnomeui/gnome-desktop-thumbnail.h>
+#include <libgnome-desktop/gnome-desktop-thumbnail.h>
 
 G_BEGIN_DECLS
 
+char             *libslab_keyfile_get (GKeyFile *keyfile, const char *key);
+char             *libslab_keyfile_get_location (GKeyFile *keyfile);
+char             *libslab_keyfile_get_locale (GKeyFile *keyfile, const char *key);
+
 gboolean          libslab_gtk_image_set_by_id (GtkImage *image, const gchar *id);
-GnomeDesktopItem *libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id);
-gboolean          libslab_gnome_desktop_item_launch_default (GnomeDesktopItem *item);
-gchar            *libslab_gnome_desktop_item_get_docpath (GnomeDesktopItem *item);
-gboolean          libslab_gnome_desktop_item_open_help (GnomeDesktopItem *item);
+GKeyFile *libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id);
+gboolean          libslab_gnome_desktop_item_launch_default (GKeyFile *item);
+gchar            *libslab_gnome_desktop_item_get_docpath (GKeyFile *item);
+gboolean          libslab_gnome_desktop_item_open_help (GKeyFile *item);
 guint32           libslab_get_current_time_millis (void);
 gint              libslab_strcmp (const gchar *a, const gchar *b);
 gint              libslab_strlen (const gchar *a);

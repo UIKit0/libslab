@@ -47,7 +47,7 @@ static void tile_clicked (GtkButton *widget);
 
 static gboolean tile_focus_in (GtkWidget *, GdkEventFocus *);
 static gboolean tile_focus_out (GtkWidget *, GdkEventFocus *);
-static gboolean tile_expose (GtkWidget *, GdkEventExpose *);
+static gboolean tile_draw (GtkWidget *, cairo_t *);
 static gboolean tile_button_release (GtkWidget *, GdkEventButton *);
 static gboolean tile_key_release (GtkWidget *, GdkEventKey *);
 static gboolean tile_popup_menu (GtkWidget *);
@@ -101,7 +101,7 @@ tile_class_init (TileClass * this_class)
 
 	widget_class->focus_in_event = tile_focus_in;
 	widget_class->focus_out_event = tile_focus_out;
-	widget_class->expose_event = tile_expose;
+	widget_class->draw = tile_draw;
 	widget_class->button_release_event = tile_button_release;
 	widget_class->key_release_event = tile_key_release;
 	widget_class->drag_begin = tile_drag_begin;
@@ -318,10 +318,10 @@ tile_clicked (GtkButton * widget)
 	tile_event->time = gtk_get_current_event_time ();
 
 	g_signal_emit (widget, tile_signals[TILE_ACTIVATED_SIGNAL], 0, tile_event);
-
-	gtk_button_released (widget);
 	g_free (tile_event);
-        gtk_button_leave (widget);
+
+	g_signal_emit_by_name (widget, "released", 0, 0); // urgh ! what ?
+	g_signal_emit_by_name (widget, "leave", 0, 0); // urgh ! what ?
 }
 
 static gboolean
@@ -344,7 +344,7 @@ tile_focus_out (GtkWidget * widget, GdkEventFocus * event)
 }
 
 static gboolean
-tile_expose (GtkWidget * widget, GdkEventExpose * event)
+tile_draw (GtkWidget * widget, cairo_t * cr)
 {
 	/* FIXME: there ought to be a better way to prevent the focus from being rendered. */
 
@@ -358,7 +358,7 @@ tile_expose (GtkWidget * widget, GdkEventExpose * event)
         if (TILE (widget)->entered == FALSE)
                 gtk_widget_set_state (widget, GTK_STATE_NORMAL);
 
-	retval = (*GTK_WIDGET_CLASS (tile_parent_class)->expose_event) (widget, event);
+	retval = (*GTK_WIDGET_CLASS (tile_parent_class)->draw) (widget, cr);
 
 	if (has_focus)
 		gtk_widget_set_can_focus (widget, TRUE);
@@ -395,7 +395,7 @@ tile_button_release (GtkWidget * widget, GdkEventButton * event)
 
 		g_signal_emit (tile, tile_signals[TILE_ACTIVATED_SIGNAL], 0, tile_event);
 
-		gtk_button_released (GTK_BUTTON (widget));
+		g_signal_emit_by_name (widget, "released", 0, 0); // urgh ! what ?
 		g_free (tile_event);
 
 		break;
@@ -419,7 +419,7 @@ tile_key_release (GtkWidget * widget, GdkEventKey * event)
 {
 	TileEvent *tile_event;
 
-	if (event->keyval == GDK_Return)
+	if (event->keyval == GDK_KEY_Return)
 	{
 		tile_event = g_new0 (TileEvent, 1);
 		tile_event->type = TILE_EVENT_ACTIVATED_KEYBOARD;
@@ -445,7 +445,7 @@ tile_popup_menu_position (GtkMenu * menu, gint * x, gint * y, gboolean * push_in
 	if (!gtk_widget_get_realized (GTK_WIDGET (tile)))
 		return;
 
-	gtk_widget_size_request (GTK_WIDGET (menu), &req);
+	gtk_widget_get_preferred_size (GTK_WIDGET (menu), &req, NULL);
 
 	top = gtk_widget_get_toplevel (GTK_WIDGET (tile));
 
