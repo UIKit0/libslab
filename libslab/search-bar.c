@@ -57,7 +57,7 @@ enum
 
 static guint signals[LAST_SIGNAL] = { 0 };
 
-G_DEFINE_TYPE (NldSearchBar, nld_search_bar, GTK_TYPE_VBOX)
+G_DEFINE_TYPE (NldSearchBar, nld_search_bar, GTK_TYPE_BOX)
 
 static void emit_search (NldSearchBar * search_bar);
 static void emit_search_callback (GtkWidget * widget, gpointer search_bar);
@@ -87,9 +87,14 @@ nld_search_bar_init (NldSearchBar * search_bar)
 	GtkWidget *alignment;
 	GtkWidget *entry;
 
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (search_bar),
+					GTK_ORIENTATION_VERTICAL);
+
 	gtk_widget_set_can_focus (GTK_WIDGET (search_bar), TRUE);
 
-	priv->hbox = gtk_hbox_new (FALSE, 3);
+	priv->hbox = gtk_box_new (FALSE, 3);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (priv->hbox),
+					GTK_ORIENTATION_HORIZONTAL);
 	gtk_box_pack_start (GTK_BOX (search_bar), priv->hbox, TRUE, FALSE, 0);
 
 	alignment = gtk_alignment_new (0.0, 0.5, 1.0, 0.0);

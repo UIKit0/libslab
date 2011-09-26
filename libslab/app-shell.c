@@ -254,7 +254,9 @@ layout_shell (AppShellData * app_data, const gchar * filter_title, const gchar *
 	app_data->shell = shell_window_new (app_data);
 	app_data->static_actions = actions;
 
-	right_vbox = gtk_vbox_new (FALSE, CATEGORY_SPACING);
+	right_vbox = gtk_box_new (FALSE, CATEGORY_SPACING);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (right_vbox),
+					GTK_ORIENTATION_VERTICAL);
 
 	num_cols = SIZING_SCREEN_WIDTH_LARGE_NUMCOLS;
 	if (gdk_screen_width () <= SIZING_SCREEN_WIDTH_LARGE)
@@ -265,7 +267,7 @@ layout_shell (AppShellData * app_data, const gchar * filter_title, const gchar *
 			num_cols = SIZING_SCREEN_WIDTH_MEDIUM_NUMCOLS;
 	}
 	app_data->category_layout =
-		app_resizer_new (GTK_VBOX (right_vbox), num_cols, TRUE, app_data);
+		app_resizer_new (GTK_BOX (right_vbox), num_cols, TRUE, app_data);
 
 	sw = gtk_scrolled_window_new (NULL, NULL);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (sw), GTK_POLICY_AUTOMATIC,
@@ -283,7 +285,9 @@ layout_shell (AppShellData * app_data, const gchar * filter_title, const gchar *
 	gtk_container_set_focus_vadjustment (GTK_CONTAINER (right_vbox),
 		gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (sw)));
 
-	left_vbox = gtk_vbox_new (FALSE, 15);
+	left_vbox = gtk_box_new (FALSE, 15);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (left_vbox),
+					GTK_ORIENTATION_VERTICAL);
 
 	filter_section = create_filter_section (app_data, filter_title);
 	app_data->filter_section = filter_section;
@@ -305,7 +309,7 @@ static gboolean
 relayout_shell_partial (gpointer user_data)
 {
 	AppShellData *app_data = (AppShellData *) user_data;
-	GtkVBox *vbox = APP_RESIZER (app_data->category_layout)->child;
+	GtkBox *vbox = APP_RESIZER (app_data->category_layout)->child;
 	CategoryData *data;
 
 	if (app_data->stop_incremental_relayout)
@@ -347,7 +351,7 @@ relayout_shell_partial (gpointer user_data)
 static void
 relayout_shell_incremental (AppShellData * app_data)
 {
-	GtkVBox *vbox = APP_RESIZER (app_data->category_layout)->child;
+	GtkBox *vbox = APP_RESIZER (app_data->category_layout)->child;
 
 	app_data->stop_incremental_relayout = FALSE;
 	app_data->filtered_out_everything = TRUE;
@@ -366,7 +370,7 @@ static void
 relayout_shell (AppShellData * app_data)
 {
 	GtkWidget *shell = app_data->shell;
-	GtkVBox *vbox = APP_RESIZER (app_data->category_layout)->child;
+	GtkBox *vbox = APP_RESIZER (app_data->category_layout)->child;
 
 	populate_application_category_sections (app_data, GTK_WIDGET (vbox));
 	app_resizer_set_table_cache (APP_RESIZER (app_data->category_layout),
@@ -393,7 +397,10 @@ create_actions_section (AppShellData * app_data, const gchar * title,
 	section = slab_section_new (title, Style1);
 	g_object_ref (section);
 
-	vbox = gtk_vbox_new (FALSE, 0);
+	vbox = gtk_box_new (FALSE, 0);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (vbox),
+					GTK_ORIENTATION_VERTICAL);
+
 	slab_section_set_contents (SLAB_SECTION (section), vbox);
 
 	if (app_data->static_actions)
@@ -431,7 +438,9 @@ create_groups_section (AppShellData * app_data, const gchar * title)
 	section = slab_section_new (title, Style1);
 	g_object_ref (section);
 
-	vbox = gtk_vbox_new (FALSE, 0);
+	vbox = gtk_box_new (FALSE, 0);
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (vbox),
+					GTK_ORIENTATION_VERTICAL);
 	slab_section_set_contents (SLAB_SECTION (section), vbox);
 
 	return section;
@@ -441,13 +450,15 @@ static void
 populate_groups_section (AppShellData * app_data)
 {
 	SlabSection *section = SLAB_SECTION (app_data->groups_section);
-	GtkVBox *vbox;
+	GtkBox *vbox;
 	GList *cat_list;
 
 	/* Make sure our implementation has not changed and it's still a GtkVBox */
-	g_assert (GTK_IS_VBOX (section->contents));
+	g_assert (GTK_IS_BOX (section->contents));
+	g_assert (gtk_orientable_get_orientation (GTK_ORIENTABLE (section->contents)) ==
+		  GTK_ORIENTATION_VERTICAL);
 
-	vbox = GTK_VBOX (section->contents);
+	vbox = GTK_BOX (section->contents);
 	remove_container_entries (GTK_CONTAINER (vbox));
 
 	cat_list = app_data->categories_list;
@@ -717,7 +728,9 @@ create_application_category_sections (AppShellData * app_data)
 		g_object_ref (data->section);
 		g_free (markup);
 
-		hbox = gtk_hbox_new (FALSE, 0);
+		hbox = gtk_box_new (FALSE, 0);
+		gtk_orientable_set_orientation (GTK_ORIENTABLE (hbox),
+						GTK_ORIENTATION_HORIZONTAL);
 		table = gtk_table_new (0, 0, TRUE);
 		gtk_table_set_col_spacings (GTK_TABLE (table), 5);
 		gtk_table_set_row_spacings (GTK_TABLE (table), 5);
@@ -743,7 +756,9 @@ show_no_results_message (AppShellData * app_data, GtkWidget * containing_vbox)
 		app_data->filtered_out_everything_widget = gtk_alignment_new (0.5, 0.5, 0.0, 0.0);
 		g_object_ref (app_data->filtered_out_everything_widget);
 
-		hbox = gtk_hbox_new (FALSE, 0);
+		hbox = gtk_box_new (FALSE, 0);
+		gtk_orientable_set_orientation (GTK_ORIENTABLE (hbox),
+						GTK_ORIENTATION_HORIZONTAL);
 		image = themed_icon_new ("face-surprise", GTK_ICON_SIZE_DIALOG);
 		gtk_box_pack_start (GTK_BOX (hbox), image, FALSE, FALSE, 0);
 
@@ -804,7 +819,8 @@ populate_application_category_section (AppShellData * app_data, SlabSection * se
 	GtkTable *table;
 	GList *children;
 
-	g_assert (GTK_IS_HBOX (section->contents));
+	g_assert (gtk_orientable_get_orientation (GTK_ORIENTABLE (section->contents)) ==
+		  GTK_ORIENTATION_HORIZONTAL);
 	hbox = GTK_WIDGET (section->contents);
 
 	children = gtk_container_get_children (GTK_CONTAINER (hbox));

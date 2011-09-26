@@ -258,13 +258,13 @@ app_resizer_size_allocate (GtkWidget * widget, GtkAllocation * allocation)
 }
 
 GtkWidget *
-app_resizer_new (GtkVBox * child, gint initial_num_columns, gboolean homogeneous,
-	AppShellData * app_data)
+app_resizer_new (GtkBox * child, gint initial_num_columns,
+		 gboolean homogeneous, AppShellData * app_data)
 {
 	AppResizer *widget;
 
 	g_assert (child != NULL);
-	g_assert (GTK_IS_VBOX (child));
+	g_assert (GTK_IS_BOX (child));
 
 	widget = g_object_new (APP_RESIZER_TYPE, NULL);
 	widget->cached_element_width = -1;

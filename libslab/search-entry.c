@@ -21,7 +21,7 @@
 #include "search-entry.h"
 #include "search-entry-watermark.h"
 
-#include <librsvg/rsvg.h>
+/* #include <librsvg/rsvg.h> */
 #include <string.h>
 
 typedef struct
@@ -86,11 +86,12 @@ nld_search_entry_realize (GtkWidget * widget)
 	int height;
 	GdkColor *gdkcolor;
 	char *svg, color[7];
-	RsvgHandle *rsvg;
 
 	GTK_WIDGET_CLASS (nld_search_entry_parent_class)->realize (widget);
 
 #ifdef MORE_PORTING_FUN
+	RsvgHandle *rsvg;
+
 	gdk_window_get_geometry (gtk_entry_get_text_window (GTK_ENTRY (widget)),
 	                         NULL, NULL, NULL, &height, NULL);
 

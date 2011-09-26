@@ -20,7 +20,7 @@
 
 #include "slab-section.h"
 
-G_DEFINE_TYPE (SlabSection, slab_section, GTK_TYPE_VBOX)
+G_DEFINE_TYPE (SlabSection, slab_section, GTK_TYPE_BOX)
 
 static void slab_section_finalize (GObject *);
 
@@ -36,6 +36,8 @@ slab_section_init (SlabSection * section)
 {
 	section->title = NULL;
 	section->contents = NULL;
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (section),
+					GTK_ORIENTATION_VERTICAL);
 }
 
 static void
@@ -152,7 +154,9 @@ slab_section_new_with_markup (const gchar * title_markup, SlabStyle style)
 	}
 	gtk_box_pack_start (GTK_BOX (section), align, TRUE, TRUE, 0);
 
-	section->childbox = GTK_BOX (gtk_vbox_new (FALSE, 10));
+	section->childbox = GTK_BOX (gtk_box_new (FALSE, 10));
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (section->childbox),
+					GTK_ORIENTATION_VERTICAL);
 	gtk_container_add (GTK_CONTAINER (align), GTK_WIDGET (section->childbox));
 
 	section->title = gtk_label_new (title_markup);
