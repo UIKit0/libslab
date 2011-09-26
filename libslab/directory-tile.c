@@ -265,13 +265,13 @@ directory_tile_private_setup (DirectoryTile *tile)
 		priv->default_app = NULL;
 
 	priv->delete_enabled =
-		(gboolean) GPOINTER_TO_INT (get_gconf_value (GCONF_ENABLE_DELETE_KEY));
+		(gboolean) GPOINTER_TO_INT (libslab_get_gconf_value (GCONF_ENABLE_DELETE_KEY));
 
 	client = gconf_client_get_default ();
 
 	gconf_client_add_dir (client, GCONF_ENABLE_DELETE_KEY_DIR, GCONF_CLIENT_PRELOAD_NONE, NULL);
 	priv->gconf_conn_id =
-		connect_gconf_notify (GCONF_ENABLE_DELETE_KEY, gconf_enable_delete_cb, tile);
+		libslab_gconf_notify_add (GCONF_ENABLE_DELETE_KEY, gconf_enable_delete_cb, tile);
 
 	g_object_unref (client);
 }
@@ -571,7 +571,7 @@ send_to_trigger (Tile *tile, TileEvent *event, TileAction *action)
 	gint i;
 
 
-	cmd = (gchar *) get_gconf_value (GCONF_SEND_TO_CMD_KEY);
+	cmd = (gchar *) libslab_get_gconf_value (GCONF_SEND_TO_CMD_KEY);
 
 	if (! g_shell_parse_argv (cmd, & argc, & argv_parsed, NULL))
 		goto exit;
@@ -635,7 +635,7 @@ open_with_default_trigger (Tile *tile, TileEvent *event, TileAction *action)
 	if (priv->default_app)
 	{
 		uris = g_list_append (uris, TILE (tile)->uri);
-		
+
 		launch_context = gdk_app_launch_context_new ();
 		gdk_app_launch_context_set_screen (launch_context,
 						   gtk_widget_get_screen (GTK_WIDGET (tile)));

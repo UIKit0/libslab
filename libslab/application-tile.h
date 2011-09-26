@@ -22,6 +22,7 @@
 #define __APPLICATION_TILE_H__
 
 #include <libslab/nameplate-tile.h>
+#include <libslab/slab-key-file.h>
 
 G_BEGIN_DECLS
 
@@ -58,7 +59,7 @@ GtkWidget *application_tile_new (const gchar * desktop_item_id);
 GtkWidget *application_tile_new_full (const gchar * desktop_item_id,
 	GtkIconSize icon_size, gboolean show_generic_name, const gchar *gconf_prefix);
 
-GKeyFile *application_tile_get_desktop_item (ApplicationTile * tile);
+SlabKeyFile *application_tile_get_desktop_item (ApplicationTile * tile);
 
 G_END_DECLS
 #endif

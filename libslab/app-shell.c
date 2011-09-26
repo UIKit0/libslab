@@ -61,7 +61,7 @@ static void generate_category (const char * category, GMenuTreeDirectory * root_
 static void generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data,
 	CategoryData * cat_data, gboolean recursive);
 static void generate_new_apps (AppShellData * app_data);
-static void insert_launcher_into_category (CategoryData * cat_data, GKeyFile * desktop_item,
+static void insert_launcher_into_category (CategoryData * cat_data, SlabKeyFile * desktop_item,
 	AppShellData * app_data);
 
 static gboolean main_keypress_callback (GtkWidget * widget, GdkEventKey * event,
@@ -976,7 +976,7 @@ generate_category (const char * category, GMenuTreeDirectory * root_dir, AppShel
 }
 
 static gboolean
-check_specific_apps_hack (GKeyFile * item)
+check_specific_apps_hack (SlabKeyFile * item)
 {
 	static const gchar *COMMAND_LINE_LOCKDOWN_GCONF_KEY =
 		"/desktop/gnome/lockdown/disable_command_line";
@@ -993,7 +993,7 @@ check_specific_apps_hack (GKeyFile * item)
 	}
 
 	/* This seems like an ugly hack but it's the way it's currently done in the old control center */
-	exec = libslab_keyfile_get (item, G_KEY_FILE_DESKTOP_KEY_EXEC);
+	exec = slab_key_file_get (item, G_KEY_FILE_DESKTOP_KEY_EXEC);
 
 	/* discard xscreensaver if gnome-screensaver is installed */
 	if ((exec && !strcmp (exec, "xscreensaver-demo"))
@@ -1017,7 +1017,7 @@ check_specific_apps_hack (GKeyFile * item)
 	if (command_line_lockdown)
 	{
 		const gchar *categories =
-		  libslab_keyfile_get (item, G_KEY_FILE_DESKTOP_KEY_CATEGORIES);
+		  slab_key_file_get (item, G_KEY_FILE_DESKTOP_KEY_CATEGORIES);
 		if (g_strrstr (categories, COMMAND_LINE_LOCKDOWN_DESKTOP_CATEGORY))
 		{
 			/* printf ("eliminating %s\n", gnome_desktop_item_get_location (item)); */
@@ -1035,7 +1035,7 @@ check_specific_apps_hack (GKeyFile * item)
 static void
 generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data, CategoryData * cat_data, gboolean recursive)
 {
-	GKeyFile *desktop_item;
+	SlabKeyFile *desktop_item;
 	const gchar *desktop_file;
 	GSList *contents, *l;
 
@@ -1065,8 +1065,7 @@ generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data, Cate
 				g_hash_table_insert (app_data->hash, (gpointer) desktop_file,
 					(gpointer) desktop_file);
 			}
-			desktop_item = g_key_file_new();
-			g_key_file_load_from_file (desktop_item, desktop_file, 0, NULL);
+			desktop_item = slab_key_file_new_from_path (desktop_file);
 			if (!desktop_item)
 			{
 				g_critical ("Failure - gnome_desktop_item_new_from_file(%s)",
@@ -1075,7 +1074,7 @@ generate_launchers (GMenuTreeDirectory * root_dir, AppShellData * app_data, Cate
 			}
 			if (!check_specific_apps_hack (desktop_item))
 				insert_launcher_into_category (cat_data, desktop_item, app_data);
-			g_object_unref (desktop_item);
+			slab_key_file_unref (desktop_item);
 			break;
 		default:
 			break;
@@ -1135,9 +1134,9 @@ generate_new_apps (AppShellData * app_data)
 			for (launchers = data->launcher_list; launchers; launchers = launchers->next)
 			{
 				Tile *tile = TILE (launchers->data);
-				GKeyFile *item =
+				SlabKeyFile *item =
 					application_tile_get_desktop_item (APPLICATION_TILE (tile));
-				gchar *uri = libslab_keyfile_get_location (item);
+				gchar *uri = slab_key_file_get_location (item);
 				g_string_append (gstr, uri);
 				g_string_append (gstr, separator);
 				g_free (uri);
@@ -1171,9 +1170,9 @@ generate_new_apps (AppShellData * app_data)
 		for (launchers = cat_data->launcher_list; launchers; launchers = launchers->next)
 		{
 			Tile *tile = TILE (launchers->data);
-			GKeyFile *item =
+			SlabKeyFile *item =
 				application_tile_get_desktop_item (APPLICATION_TILE (tile));
-			gchar *uri = libslab_keyfile_get_location (item);
+			gchar *uri = slab_key_file_get_location (item);
 			if (!g_hash_table_lookup (all_apps_cache, uri))
 			{
 				GFile *file;
@@ -1267,8 +1266,9 @@ generate_new_apps (AppShellData * app_data)
 }
 
 static void
-insert_launcher_into_category (CategoryData * cat_data, GKeyFile * desktop_item,
-	AppShellData * app_data)
+insert_launcher_into_category (CategoryData * cat_data,
+			       SlabKeyFile * desktop_item,
+			       AppShellData * app_data)
 {
 	GtkWidget *launcher;
 	static GtkSizeGroup *icon_group = NULL;
@@ -1281,13 +1281,13 @@ insert_launcher_into_category (CategoryData * cat_data, GKeyFile * desktop_item,
 		icon_group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
 	launcher =
-	  application_tile_new_full (libslab_keyfile_get_location (desktop_item),
+	  application_tile_new_full (slab_key_file_get_location (desktop_item),
 		app_data->icon_size, app_data->show_tile_generic_name, app_data->gconf_prefix);
 	g_return_if_fail (launcher != NULL);
 
 	gtk_widget_set_size_request (launcher, SIZING_TILE_WIDTH, -1);
 
-	filepath = libslab_keyfile_get (desktop_item, G_KEY_FILE_DESKTOP_KEY_EXEC);
+	filepath = slab_key_file_get (desktop_item, G_KEY_FILE_DESKTOP_KEY_EXEC);
 	g_strdelimit (filepath, " ", '\0');	/* just want the file name - no args or replacements */
 	filename = g_strrstr (filepath, "/");
 	if (filename)

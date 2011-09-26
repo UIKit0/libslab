@@ -351,13 +351,13 @@ document_tile_private_setup (DocumentTile *this)
 	g_object_unref (file);
 
 	priv->delete_enabled =
-		(gboolean) GPOINTER_TO_INT (get_gconf_value (GCONF_ENABLE_DELETE_KEY));
+		(gboolean) GPOINTER_TO_INT (libslab_get_gconf_value (GCONF_ENABLE_DELETE_KEY));
 
 	client = gconf_client_get_default ();
 
 	gconf_client_add_dir (client, GCONF_ENABLE_DELETE_KEY_DIR, GCONF_CLIENT_PRELOAD_NONE, NULL);
 	priv->gconf_conn_id =
-		connect_gconf_notify (GCONF_ENABLE_DELETE_KEY, gconf_enable_delete_cb, this);
+		libslab_gconf_notify_add (GCONF_ENABLE_DELETE_KEY, gconf_enable_delete_cb, this);
 
 	g_object_unref (client);
 
@@ -1088,7 +1088,7 @@ send_to_trigger (Tile *tile, TileEvent *event, TileAction *action)
 	gchar *tmp;
 	gint i;
 
-	cmd = (gchar *) get_gconf_value (GCONF_SEND_TO_CMD_KEY);
+	cmd = (gchar *) libslab_get_gconf_value (GCONF_SEND_TO_CMD_KEY);
 	argv = g_strsplit (cmd, " ", 0);
 
 	filename = g_filename_from_uri (TILE (tile)->uri, NULL, NULL);
@@ -1119,7 +1119,7 @@ send_to_trigger (Tile *tile, TileEvent *event, TileAction *action)
 #endif
 
 	if (error)
-		handle_g_error (&error, "error in %s", G_STRFUNC);
+		libslab_handle_g_error (&error, "error in %s", G_STRFUNC);
 
 	g_free (cmd);
 	g_free (filename);

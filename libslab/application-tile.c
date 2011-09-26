@@ -70,11 +70,11 @@ static void run_package_management_command (ApplicationTile *, gchar *);
 static void update_user_list_menu_item (ApplicationTile *);
 static void agent_notify_cb (GObject *, GParamSpec *, gpointer);
 
-static StartupStatus get_desktop_item_startup_status (GKeyFile *);
+static StartupStatus get_desktop_item_startup_status (SlabKeyFile *);
 static void          update_startup_menu_item (ApplicationTile *);
 
 typedef struct {
-	GKeyFile *desktop_item;
+	SlabKeyFile *desktop_item;
 
 	gchar       *image_id;
 	GtkIconSize  image_size;
@@ -145,24 +145,24 @@ application_tile_new_full (const gchar *desktop_item_id,
 
 	const gchar *uri = NULL;
 
-	GKeyFile *desktop_item;
+	SlabKeyFile *desktop_item;
 
-	desktop_item = libslab_gnome_desktop_item_new_from_unknown_id (desktop_item_id);
+	desktop_item = slab_key_file_new_from_unknown_id (desktop_item_id);
 
 	gchar *type = NULL;
 	if (
 		desktop_item &&
-		!g_ascii_strcasecmp ((type = libslab_keyfile_get (desktop_item,
+		!g_ascii_strcasecmp ((type = slab_key_file_get (desktop_item,
 								  G_KEY_FILE_DESKTOP_KEY_TYPE)),
 				     G_KEY_FILE_DESKTOP_TYPE_APPLICATION))
 	{
-	  uri = libslab_keyfile_get_location (desktop_item);
+	  uri = slab_key_file_get_location (desktop_item);
         }
 	g_free (type);
 
 	if (! uri) {
 		if (desktop_item)
-			g_object_unref (desktop_item);
+			slab_key_file_unref (desktop_item);
 
 		return NULL;
 	}
@@ -215,7 +215,7 @@ application_tile_finalize (GObject *g_object)
 	}
 
 	if (priv->desktop_item) {
-		g_object_unref (priv->desktop_item);
+		slab_key_file_unref (priv->desktop_item);
 		priv->desktop_item = NULL;
 	}
 	if (priv->image_id) {
@@ -314,18 +314,18 @@ application_tile_setup (ApplicationTile *this, const gchar *gconf_prefix)
 
 
 	if (! priv->desktop_item) {
-		priv->desktop_item = libslab_gnome_desktop_item_new_from_unknown_id (TILE (this)->uri);
+		priv->desktop_item = slab_key_file_new_from_unknown_id (TILE (this)->uri);
 		if (! priv->desktop_item)
 			return;
 	}
 
-	priv->image_id = libslab_keyfile_get_locale (priv->desktop_item,
+	priv->image_id = slab_key_file_get_locale (priv->desktop_item,
 						     G_KEY_FILE_DESKTOP_KEY_ICON);
 	image = themed_icon_new (priv->image_id, priv->image_size);
 
-	name = libslab_keyfile_get_locale (priv->desktop_item, "Name");
-	desc = libslab_keyfile_get_locale (priv->desktop_item, "GenericName");
-	comment = libslab_keyfile_get_locale (priv->desktop_item, "Comment");	
+	name = slab_key_file_get_locale (priv->desktop_item, "Name");
+	desc = slab_key_file_get_locale (priv->desktop_item, "GenericName");
+	comment = slab_key_file_get_locale (priv->desktop_item, "Comment");	
 
 	accessible = gtk_widget_get_accessible (GTK_WIDGET (this));
 	if (name)
@@ -392,7 +392,7 @@ application_tile_setup (ApplicationTile *this, const gchar *gconf_prefix)
 
 /* make help action */
 
-	if (libslab_keyfile_get (priv->desktop_item, "DocPath")) {
+	if (slab_key_file_get (priv->desktop_item, "DocPath")) {
 		action = tile_action_new (
 			TILE (this), help_trigger, _("Help"),
 			TILE_ACTION_OPENS_NEW_WINDOW | TILE_ACTION_OPENS_HELP);
@@ -681,7 +681,7 @@ add_to_startup_list (ApplicationTile *this)
 	gchar *dst_uri;
 
 	desktop_item_filename =
-	  g_filename_from_uri (libslab_keyfile_get_location (priv->desktop_item), NULL,
+	  g_filename_from_uri (slab_key_file_get_location (priv->desktop_item), NULL,
 			       NULL);
 
 	g_return_if_fail (desktop_item_filename != NULL);
@@ -695,7 +695,7 @@ add_to_startup_list (ApplicationTile *this)
 
 	dst_filename = g_build_filename (startup_dir, desktop_item_basename, NULL);
 
-	src_uri = libslab_keyfile_get_location (priv->desktop_item);
+	src_uri = slab_key_file_get_location (priv->desktop_item);
 	dst_uri = g_filename_to_uri (dst_filename, NULL, NULL);
 
 	copy_file (src_uri, dst_uri);
@@ -718,7 +718,7 @@ remove_from_startup_list (ApplicationTile *this)
 	gchar *src_filename;
 
 	ditem_filename =
-		g_filename_from_uri (libslab_keyfile_get_location (priv->desktop_item), NULL,
+		g_filename_from_uri (slab_key_file_get_location (priv->desktop_item), NULL,
 		NULL);
 
 	g_return_if_fail (ditem_filename != NULL);
@@ -740,7 +740,7 @@ remove_from_startup_list (ApplicationTile *this)
 	g_free (src_filename);
 }
 
-GKeyFile *
+SlabKeyFile *
 application_tile_get_desktop_item (ApplicationTile *tile)
 {
 	return APPLICATION_TILE_GET_PRIVATE (tile)->desktop_item;
@@ -800,7 +800,7 @@ update_user_list_menu_item (ApplicationTile *this)
 }
 
 static StartupStatus
-get_desktop_item_startup_status (GKeyFile *desktop_item)
+get_desktop_item_startup_status (SlabKeyFile *desktop_item)
 {
 	gchar *filename;
 	gchar *basename;
@@ -812,7 +812,7 @@ get_desktop_item_startup_status (GKeyFile *desktop_item)
 	StartupStatus retval;
 	gint x;
 
-	filename = g_filename_from_uri (libslab_keyfile_get_location (desktop_item), NULL, NULL);
+	filename = g_filename_from_uri (slab_key_file_get_location (desktop_item), NULL, NULL);
 	if (!filename)
 		return APP_NOT_ELIGIBLE;
 	basename = g_path_get_basename (filename);

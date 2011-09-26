@@ -26,6 +26,7 @@
 #define GMENU_I_KNOW_THIS_IS_UNSTABLE
 #include <gmenu-tree.h>
 
+#include <libslab/slab-key-file.h>
 #include <libslab/slab-section.h>
 #include <libslab/tile.h>
 
@@ -109,13 +110,13 @@ typedef struct
 typedef struct
 {
 	const gchar *name;
-	GKeyFile *item;
+	SlabKeyFile *item;
 } AppAction;
 
 typedef struct
 {
 	long time;
-	GKeyFile *item;
+	SlabKeyFile *item;
 } NewAppData;
 
 void generate_categories (AppShellData * app_data);

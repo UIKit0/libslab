@@ -35,6 +35,7 @@
 #include <gio/gio.h>
 
 #include "libslab-utils.h"
+#include <libslab/slab-key-file.h>
 
 #define MODIFIABLE_APPS_GCONF_KEY "/desktop/gnome/applications/main-menu/lock-down/user_modifiable_apps"
 #define MODIFIABLE_DOCS_GCONF_KEY "/desktop/gnome/applications/main-menu/lock-down/user_modifiable_docs"
@@ -1067,14 +1068,14 @@ create_app_item (BookmarkAgent *this, const gchar *uri)
 {
 	BookmarkAgentPrivate *priv = PRIVATE (this);
 
-	GKeyFile *ditem;
+	SlabKeyFile *ditem;
 	gchar *uri_new = NULL;
 
-	ditem = libslab_gnome_desktop_item_new_from_unknown_id (uri);
+	ditem = slab_key_file_new_from_unknown_id (uri);
 
 	if (ditem) {
-		uri_new = g_strdup (libslab_keyfile_get_location (ditem));
-		g_object_unref (ditem);
+		uri_new = g_strdup (slab_key_file_get_location (ditem));
+		slab_key_file_unref (ditem);
 	}
 
 	if (! uri_new)

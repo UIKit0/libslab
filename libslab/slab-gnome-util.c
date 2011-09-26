@@ -135,22 +135,22 @@ get_slab_gconf_slist (const gchar * key)
 	return value;
 }
 
-GKeyFile *
+SlabKeyFile *
 load_desktop_item_from_gconf_key (const gchar * key)
 {
-	GKeyFile *item;
+	SlabKeyFile *item;
 	gchar *id = get_slab_gconf_string (key);
 
 	if (!id)
 		return NULL;
 
-	item = libslab_gnome_desktop_item_new_from_unknown_id (id);
+	item = slab_key_file_new_from_unknown_id (id);
 	g_free (id);
 	return item;
 }
 
 gchar *
-get_package_name_from_desktop_item (GKeyFile * desktop_item)
+get_package_name_from_desktop_item (SlabKeyFile * desktop_item)
 {
 	gchar *argv[6];
 	gchar *package_name;
@@ -161,7 +161,7 @@ get_package_name_from_desktop_item (GKeyFile * desktop_item)
 	argv[1] = "-qf";
 	argv[2] = "--qf";
 	argv[3] = "%{NAME}";
-	argv[4] = g_filename_from_uri (libslab_keyfile_get_location (desktop_item), NULL, NULL);
+	argv[4] = g_filename_from_uri (slab_key_file_get_location (desktop_item), NULL, NULL);
 	argv[5] = NULL;
 
 	error = NULL;
@@ -183,7 +183,7 @@ get_package_name_from_desktop_item (GKeyFile * desktop_item)
 }
 
 gboolean
-open_desktop_item_exec (GKeyFile * desktop_item)
+open_desktop_item_exec (SlabKeyFile * desktop_item)
 {
 	GError *error = NULL;
 
@@ -198,7 +198,7 @@ open_desktop_item_exec (GKeyFile * desktop_item)
 	if (error)
 	{
 		g_warning ("error launching %s [%s]\n",
-			   libslab_keyfile_get_location (desktop_item),
+			   slab_key_file_get_location (desktop_item),
 			   error->message);
 		g_error_free (error);
 		return FALSE;
@@ -208,7 +208,7 @@ open_desktop_item_exec (GKeyFile * desktop_item)
 }
 
 gboolean
-open_desktop_item_help (GKeyFile * desktop_item)
+open_desktop_item_help (SlabKeyFile * desktop_item)
 {
 	gchar *doc_path;
 	gchar *help_uri;
@@ -218,7 +218,7 @@ open_desktop_item_help (GKeyFile * desktop_item)
 	if (!desktop_item)
 		return FALSE;
 
-	doc_path = libslab_keyfile_get (desktop_item, "DocPath");
+	doc_path = slab_key_file_get (desktop_item, "DocPath");
 
 	if (doc_path)
 	{
@@ -249,9 +249,9 @@ open_desktop_item_help (GKeyFile * desktop_item)
 }
 
 gboolean
-desktop_item_is_in_main_menu (GKeyFile * desktop_item)
+desktop_item_is_in_main_menu (SlabKeyFile * desktop_item)
 {
-	return desktop_uri_is_in_main_menu (libslab_keyfile_get_location (desktop_item));
+	return desktop_uri_is_in_main_menu (slab_key_file_get_location (desktop_item));
 }
 
 gboolean

@@ -22,6 +22,7 @@ HEADER_FILES=					\
 	search-context-picker.h			\
 	search-entry.h				\
 	shell-window.h				\
+	slab-key-file.h				\
 	slab-gnome-util.h			\
 	slab-section.h				\
 	slab.h					\
@@ -51,6 +52,7 @@ libslab_la_SOURCES =				\
 	search-entry-watermark.h		\
 	search-entry.c				\
 	shell-window.c				\
+	slab-key-file.c				\
 	slab-gnome-util.c			\
 	slab-section.c				\
 	system-tile.c				\

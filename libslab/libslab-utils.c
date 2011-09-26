@@ -14,9 +14,6 @@
 #include <gconf/gconf-value.h>
 #include <gtk/gtk.h>
 
-#define DESKTOP_ITEM_TERMINAL_EMULATOR_FLAG "TerminalEmulator"
-#define ALTERNATE_DOCPATH_KEY               "DocPath"
-
 static FILE *checkpoint_file;
 
 gboolean
@@ -52,7 +49,6 @@ libslab_gtk_image_set_by_id (GtkImage *image, const gchar *id)
 
 		if (found) {
 			gtk_image_set_from_pixbuf (image, pixbuf);
-
 			g_object_unref (pixbuf);
 		}
 		else
@@ -88,105 +84,6 @@ libslab_gtk_image_set_by_id (GtkImage *image, const gchar *id)
 	return found;
 }
 
-GKeyFile *
-libslab_gnome_desktop_item_new_from_unknown_id (const gchar *id)
-{
-	GKeyFile *item;
-	gchar            *basename;
-
-	GError *error = NULL;
-
-	g_warning ("Un-believable cut & paste here");
-	if (! id)
-		return NULL;
-
-	item = g_key_file_new();
-	g_object_set_data_full (G_OBJECT (item), "file", g_strdup (id), g_free);
-
-	g_key_file_load_from_file (item, id, 0, &error);
-
-	if (! error)
-		return item;
-	else {
-		g_error_free (error);
-		error = NULL;
-	}
-
-	basename = g_strrstr (id, "/");
-
-	if (basename) {
-		basename++;
-
-		g_key_file_load_from_file (item, basename, 0, &error);
-
-		if (! error)
-			return item;
-		else {
-			g_error_free (error);
-			error = NULL;
-		}
-	}
-	g_object_unref (item);
-
-#ifdef FIXME_MORE_PORTING
-	item = gnme_desktop_item_new_from_file (id, 0, & error);
-
-	if (! error)
-		return item;
-	else {
-		g_error_free (error);
-		error = NULL;
-	}
-
-	item = gnme_desktop_item_new_from_basename (id, 0, & error);
-
-	if (! error)
-		return item;
-	else {
-		g_error_free (error);
-		error = NULL;
-	}
-
-#endif
-
-	return NULL;
-}
-
-gboolean
-libslab_gnome_desktop_item_launch_default (GKeyFile *item)
-{
-	GError *error = NULL;
-
-	if (! item)
-		return FALSE;
-
-	g_warning ("desktop item launch !"); /* FIXME more porting required */
-	/*	gnme_desktop_item_launch (item, NULL, GNOME_DESKTOP_ITEM_LAUNCH_ONLY_ONE, & error); */
-
-	if (error) {
-		g_warning ("error launching %s [%s]\n",
-			   libslab_keyfile_get_location (item),
-			   error->message);
-
-		g_error_free (error);
-
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
-gchar *
-libslab_gnome_desktop_item_get_docpath (GKeyFile *item)
-{
-	gchar *path;
-
-	path = libslab_keyfile_get_locale (item, "DocPath");
-	if (! path)
-		path = libslab_keyfile_get_locale (item, ALTERNATE_DOCPATH_KEY);
-
-	return path;
-}
 
 /* Ugh, here we don't have knowledge of the screen that is being used.  So, do
  * what we can to find it.
@@ -206,42 +103,6 @@ libslab_get_current_screen (void)
 		screen = gdk_screen_get_default ();
 
 	return screen;
-}
-
-gboolean
-libslab_gnome_desktop_item_open_help (GKeyFile *item)
-{
-	gchar *doc_path;
-	gchar *help_uri;
-
-	GError *error = NULL;
-
-	gboolean retval = FALSE;
-
-
-	if (! item)
-		return retval;
-
-	doc_path = libslab_gnome_desktop_item_get_docpath (item);
-
-	if (doc_path) {
-		help_uri = g_strdup_printf ("ghelp:%s", doc_path);
-
-		if (!gtk_show_uri (libslab_get_current_screen (), help_uri, gtk_get_current_event_time (), &error)) {
-			g_warning ("error opening %s [%s]\n", help_uri, error->message);
-
-			g_error_free (error);
-
-			retval = FALSE;
-		}
-		else
-			retval = TRUE;
-
-		g_free (help_uri);
-		g_free (doc_path);
-	}
-
-	return retval;
 }
 
 guint32
@@ -499,71 +360,6 @@ libslab_handle_g_error (GError **error, const gchar *msg_format, ...)
 	g_free (msg);
 }
 
-gboolean
-libslab_desktop_item_is_a_terminal (const gchar *uri)
-{
-	GKeyFile *d_item;
-	gchar *categories;
-
-	gboolean is_terminal = FALSE;
-
-
-	d_item = libslab_gnome_desktop_item_new_from_unknown_id (uri);
-
-	if (! d_item)
-		return FALSE;
-
-	categories = libslab_keyfile_get (d_item, G_KEY_FILE_DESKTOP_KEY_CATEGORIES);
-	is_terminal = (categories && strstr (categories, DESKTOP_ITEM_TERMINAL_EMULATOR_FLAG));
-	g_free (categories);
-
-	g_object_unref (d_item);
-
-	return is_terminal;
-}
-
-gboolean
-libslab_desktop_item_is_logout (const gchar *uri)
-{
-	GKeyFile *d_item;
-	gboolean is_logout = FALSE;
-	gchar *item_name;
-
-	d_item = libslab_gnome_desktop_item_new_from_unknown_id (uri);
-
-	if (! d_item)
-		return FALSE;
-
-	item_name = libslab_keyfile_get (d_item, G_KEY_FILE_DESKTOP_KEY_NAME);
-	is_logout = strstr ("Logout", item_name) != NULL;
-	g_free (item_name);
-
-	g_object_unref (d_item);
-
-	return is_logout;
-}
-
-gboolean
-libslab_desktop_item_is_lockscreen (const gchar *uri)
-{
-	GKeyFile *d_item;
-	gboolean is_logout = FALSE;
-	gchar *item_name;
-
-	d_item = libslab_gnome_desktop_item_new_from_unknown_id (uri);
-
-	if (! d_item)
-		return FALSE;
-
-	item_name = libslab_keyfile_get (d_item, G_KEY_FILE_DESKTOP_KEY_NAME);
-	is_logout = strstr ("Lock Screen", item_name) != NULL;
-	g_free (item_name);
-
-	g_object_unref (d_item);
-
-	return is_logout;
-}
-
 gchar *
 libslab_string_replace_once (const gchar *string, const gchar *key, const gchar *value)
 {
@@ -721,21 +517,4 @@ libslab_checkpoint (const char *format, ...)
 
 	fputs ("\n", checkpoint_file);
 	fflush (checkpoint_file);
-}
-
-char *
-libslab_keyfile_get (GKeyFile *keyfile, const char *key)
-{
-  return g_key_file_get_value (keyfile, G_KEY_FILE_DESKTOP_GROUP, key, NULL);
-}
-
-char *
-libslab_keyfile_get_locale (GKeyFile *keyfile, const char *key)
-{
-  return g_key_file_get_locale_string (keyfile, G_KEY_FILE_DESKTOP_GROUP, key, NULL, NULL);
-}
-
-const char *libslab_keyfile_get_location (GKeyFile *keyfile)
-{
-  return g_object_get_data (keyfile, "file");
 }

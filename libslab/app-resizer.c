@@ -243,7 +243,7 @@ app_resizer_size_allocate (GtkWidget * widget, GtkAllocation * allocation)
 		GtkRequisition req;
 
 		/* Have to do this so that it requests, and thus gets allocated, new amount */
-		gtk_widget_size_request (child, &req);
+		gtk_widget_get_preferred_size (child, &req, NULL);
 
 		resizer->cur_num_cols = new_num_cols;
 	}
@@ -285,7 +285,7 @@ app_resizer_new (GtkBox * child, gint initial_num_columns,
 void
 app_resizer_set_vadjustment_value (GtkWidget * widget, gdouble value)
 {
-	GtkAdjustment *adjust = gtk_layout_get_vadjustment (GTK_LAYOUT (widget));
+	GtkAdjustment *adjust = gtk_scrollable_get_vadjustment (GTK_SCROLLABLE (widget));
 	gdouble upper, page_size;
 
 	upper = gtk_adjustment_get_upper (adjust);
