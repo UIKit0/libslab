@@ -20,13 +20,10 @@
 
 #include "search-entry.h"
 #include "search-entry-watermark.h"
-
-/* #include <librsvg/rsvg.h> */
 #include <string.h>
 
 typedef struct
 {
-	GdkPixbuf *watermark;
 	int width, height;
 } NldSearchEntryPrivate;
 
@@ -36,20 +33,13 @@ static void nld_search_entry_class_init (NldSearchEntryClass *);
 static void nld_search_entry_init (NldSearchEntry *);
 static void nld_search_entry_finalize (GObject *);
 
-static void nld_search_entry_realize (GtkWidget * widget);
-static gboolean nld_search_entry_draw (GtkWidget * widget, cairo_t *cr);
-
 G_DEFINE_TYPE (NldSearchEntry, nld_search_entry, GTK_TYPE_ENTRY)
 
 static void nld_search_entry_class_init (NldSearchEntryClass * nld_search_entry_class)
 {
 	GObjectClass *g_obj_class = G_OBJECT_CLASS (nld_search_entry_class);
-	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (nld_search_entry_class);
 
 	g_type_class_add_private (nld_search_entry_class, sizeof (NldSearchEntryPrivate));
-
-	widget_class->realize = nld_search_entry_realize;
-	widget_class->draw = nld_search_entry_draw;
 
 	g_obj_class->finalize = nld_search_entry_finalize;
 }
@@ -62,89 +52,7 @@ nld_search_entry_init (NldSearchEntry * entry)
 static void
 nld_search_entry_finalize (GObject * object)
 {
-	NldSearchEntryPrivate *priv = NLD_SEARCH_ENTRY_GET_PRIVATE (object);
-
-	if (priv->watermark)
-		g_object_unref (priv->watermark);
-
 	G_OBJECT_CLASS (nld_search_entry_parent_class)->finalize (object);
-}
-
-static void
-rsvg_size_callback (int *width, int *height, gpointer user_data)
-{
-	NldSearchEntryPrivate *priv = user_data;
-
-	*width = priv->width = priv->height * (double) *width / (double) *height;
-	*height = priv->height;
-}
-
-static void
-nld_search_entry_realize (GtkWidget * widget)
-{
-	NldSearchEntryPrivate *priv = NLD_SEARCH_ENTRY_GET_PRIVATE (widget);
-	int height;
-	GdkColor *gdkcolor;
-	char *svg, color[7];
-
-	GTK_WIDGET_CLASS (nld_search_entry_parent_class)->realize (widget);
-
-#ifdef MORE_PORTING_FUN
-	RsvgHandle *rsvg;
-
-	gdk_window_get_geometry (gtk_entry_get_text_window (GTK_ENTRY (widget)),
-	                         NULL, NULL, NULL, &height, NULL);
-
-	if (height - 2 == priv->height)
-		return;
-	priv->height = height - 2;
-
-	gdkcolor = &gtk_widget_get_style (widget)->fg[gtk_widget_get_state (widget)];
-	snprintf (color, 6, "%02x%02x%02x", gdkcolor->red >> 8, gdkcolor->green >> 8,
-		gdkcolor->blue >> 8);
-	svg = g_strdup_printf (SEARCH_ENTRY_WATERMARK_SVG, color, color);
-
-	rsvg = rsvg_handle_new ();
-	rsvg_handle_set_size_callback (rsvg, rsvg_size_callback, priv, NULL);
-	rsvg_handle_write (rsvg, (const guchar *) svg, strlen (svg), NULL);
-	rsvg_handle_close (rsvg, NULL);
-	g_free (svg);
-
-	if (priv->watermark)
-		g_object_unref (priv->watermark);
-	priv->watermark = rsvg_handle_get_pixbuf (rsvg);
-	rsvg_handle_free (rsvg);
-#endif
-	g_warning ("missing svg entry fun");
-}
-
-static gboolean
-nld_search_entry_draw (GtkWidget *widget, cairo_t *cr)
-{
-	NldSearchEntryPrivate *priv = NLD_SEARCH_ENTRY_GET_PRIVATE (widget);
-
-	GTK_WIDGET_CLASS (nld_search_entry_parent_class)->draw (widget, cr);
-
-  g_warning ("GTK3ME: No gdk to draw pixbufs with");
-#ifdef DISABLED_FOR_NOW
-	if (event->window == gtk_entry_get_text_window (GTK_ENTRY (widget)))
-	{
-		int width, height, x;
-
-		if (gtk_widget_get_direction (widget) == GTK_TEXT_DIR_LTR)
-		{
-			gdk_drawable_get_size (event->window, &width, &height);
-			x = width - priv->width - 1;
-		}
-		else
-			x = 1;
-		gdk_draw_pixbuf (event->window, gtk_widget_get_style (widget)->fg_gc[gtk_widget_get_state (widget)],
-			priv->watermark, 0, 0, x, 1, priv->width, priv->height,
-			GDK_RGB_DITHER_NORMAL, 0, 0);
-	}
-#endif
-
-	return FALSE;
 }
 
 GtkWidget *
