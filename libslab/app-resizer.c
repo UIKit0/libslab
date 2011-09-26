@@ -26,26 +26,7 @@
 static void app_resizer_class_init (AppResizerClass *);
 static void app_resizer_init (AppResizer *);
 
-static void app_resizer_size_allocate (GtkWidget * resizer, GtkAllocation * allocation);
-static gboolean app_resizer_paint_window (GtkWidget * widget, GdkEventExpose * event,
-	AppShellData * app_data);
-
 G_DEFINE_TYPE (AppResizer, app_resizer, GTK_TYPE_LAYOUT);
-
-
-static void
-app_resizer_class_init (AppResizerClass * klass)
-{
-	GtkWidgetClass *widget_class;
-
-	widget_class = GTK_WIDGET_CLASS (klass);
-	widget_class->size_allocate = app_resizer_size_allocate;
-}
-
-static void
-app_resizer_init (AppResizer * window)
-{
-}
 
 void
 remove_container_entries (GtkContainer * widget)
@@ -257,6 +238,59 @@ app_resizer_size_allocate (GtkWidget * widget, GtkAllocation * allocation)
 	                     child_allocation.height);
 }
 
+static gboolean
+app_resizer_draw (GtkWidget * widget, cairo_t *cr)
+{
+
+	AppShellData * app_data = APP_RESIZER (widget)->app_data;
+
+	/*
+	printf("ENTER - app_resizer_paint_window\n");
+	printf("Area:      %d, %d, %d, %d\n", event->area.x, event->area.y, event->area.width, event->area.height);
+	printf("Allocation:%d, %d, %d, %d\n\n", widget->allocation.x, widget->allocation.y, widget->allocation.width, widget->allocation.height);
+	*/
+
+	GTK_WIDGET_CLASS (app_resizer_parent_class)->draw (widget, cr);
+
+	g_warning ("TESTME: do I render the selected group nicely !?");
+
+	if (app_data->selected_group)
+	{
+		GdkRGBA rgba;
+		GtkWidget *selected_widget = GTK_WIDGET (app_data->selected_group);
+		GtkAllocation allocation, selected_allocation;
+		GtkStyleContext *context;
+
+		gtk_widget_get_allocation (widget, &allocation);
+		gtk_widget_get_allocation (selected_widget, &selected_allocation);
+
+		/* set the correct source color */
+		context = gtk_widget_get_style_context (widget);
+		gtk_style_context_get_color (context, GTK_STATE_SELECTED, &rgba);
+		gdk_cairo_set_source_rgba (cr, &rgba);
+
+		cairo_rectangle (cr, selected_allocation.x, selected_allocation.y,
+				 allocation.width, selected_allocation.height);
+	}
+
+	return FALSE;
+}
+
+static void
+app_resizer_class_init (AppResizerClass * klass)
+{
+	GtkWidgetClass *widget_class;
+
+	widget_class = GTK_WIDGET_CLASS (klass);
+	widget_class->size_allocate = app_resizer_size_allocate;
+	widget_class->draw = app_resizer_draw;
+}
+
+static void
+app_resizer_init (AppResizer * window)
+{
+}
+
 GtkWidget *
 app_resizer_new (GtkBox * child, gint initial_num_columns,
 		 gboolean homogeneous, AppShellData * app_data)
@@ -272,9 +306,6 @@ app_resizer_new (GtkBox * child, gint initial_num_columns,
 	widget->table_elements_homogeneous = homogeneous;
 	widget->setting_style = FALSE;
 	widget->app_data = app_data;
-
-	g_signal_connect (G_OBJECT (widget), "expose-event", G_CALLBACK (app_resizer_paint_window),
-		app_data);
 
 	gtk_container_add (GTK_CONTAINER (widget), GTK_WIDGET (child));
 	widget->child = child;
@@ -296,39 +327,4 @@ app_resizer_set_vadjustment_value (GtkWidget * widget, gdouble value)
 		value = upper - page_size;
 	}
 	gtk_adjustment_set_value (adjust, value);
-}
-
-static gboolean
-app_resizer_paint_window (GtkWidget * widget, GdkEventExpose * event, AppShellData * app_data)
-{
-	/*
-	printf("ENTER - app_resizer_paint_window\n");
-	printf("Area:      %d, %d, %d, %d\n", event->area.x, event->area.y, event->area.width, event->area.height);
-	printf("Allocation:%d, %d, %d, %d\n\n", widget->allocation.x, widget->allocation.y, widget->allocation.width, widget->allocation.height);
-	*/
-
-  g_warning ("GTK3ME: No gdk to draw rectangles with");
-#ifdef DISABLED_FOR_NOW
-	gdk_draw_rectangle (gtk_layout_get_bin_window (GTK_LAYOUT (widget)),
-	                    gtk_widget_get_style (widget)->base_gc[GTK_STATE_NORMAL],
-	                    TRUE, event->area.x, event->area.y,
-	                    event->area.width, event->area.height);
-
-	if (app_data->selected_group)
-	{
-		GtkWidget *selected_widget = GTK_WIDGET (app_data->selected_group);
-		GtkAllocation allocation, selected_allocation;
-
-		gtk_widget_get_allocation (widget, &allocation);
-		gtk_widget_get_allocation (selected_widget, &selected_allocation);
-
-		gdk_draw_rectangle (gtk_widget_get_window (selected_widget),	/* drawing on child window and child coordinates */
-		                    gtk_widget_get_style (selected_widget)->light_gc[GTK_STATE_SELECTED], TRUE,
-		                    selected_allocation.x, selected_allocation.y,
-		                    allocation.width,	/* drawing with our coordinates here to draw all the way to the edge. */
-		                    selected_allocation.height);
-	}
-#endif
-
-	return FALSE;
 }

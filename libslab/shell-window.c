@@ -26,18 +26,50 @@
 
 static void shell_window_class_init (ShellWindowClass *);
 static void shell_window_init (ShellWindow *);
-static void shell_window_handle_size_request (GtkWidget * widget, GtkRequisition * requisition,
-	AppShellData * data);
-
-gboolean shell_window_paint_window (GtkWidget * widget, GdkEventExpose * event, gpointer data);
-
-#define SHELL_WINDOW_BORDER_WIDTH 6
 
 G_DEFINE_TYPE (ShellWindow, shell_window, GTK_TYPE_FRAME);
+
+static GtkSizeRequestMode
+shell_window_get_request_mode (GtkWidget *widget)
+{
+  return GTK_SIZE_REQUEST_CONSTANT_SIZE;
+}
+
+static void
+shell_window_get_preferred_height (GtkWidget       *widget,
+				   gint            *minimum_height,
+				   gint            *natural_height)
+{
+	AppShellData * app_data = SHELL_WINDOW (widget)->data;
+
+	GTK_WIDGET_CLASS (shell_window_parent_class)->get_preferred_height
+					(widget, minimum_height, natural_height);
+	*natural_height = (double)gdk_screen_height () * SIZING_HEIGHT_PERCENT;
+//	fprintf (stderr, "heights: %d %d\n", *minimum_height, *natural_height);
+}
+
+static void
+shell_window_get_preferred_width (GtkWidget       *widget,
+				  gint            *minimum_width,
+				  gint            *natural_width)
+{
+	AppShellData * app_data = SHELL_WINDOW (widget)->data;
+
+	GTK_WIDGET_CLASS (shell_window_parent_class)->get_preferred_width
+					(widget, minimum_width, natural_width);
+
+	*natural_width = MAX (((gfloat) gdk_screen_width () * SIZING_HEIGHT_PERCENT), *natural_width);
+//	fprintf (stderr, "widths: %d %d\n", *minimum_width, *natural_width);
+}
 
 static void
 shell_window_class_init (ShellWindowClass * klass)
 {
+	GtkWidgetClass *wklass = GTK_WIDGET_CLASS (klass);
+
+	wklass->get_request_mode = shell_window_get_request_mode;
+	wklass->get_preferred_width = shell_window_get_preferred_width;
+	wklass->get_preferred_height = shell_window_get_preferred_height;
 }
 
 static void
@@ -48,70 +80,9 @@ shell_window_init (ShellWindow * window)
 	window->_right_pane = NULL;
 }
 
-GtkWidget *
-shell_window_new (AppShellData * app_data)
-{
-	ShellWindow *window = g_object_new (SHELL_WINDOW_TYPE, NULL);
-
-	gtk_widget_set_app_paintable (GTK_WIDGET (window), TRUE);
-	gtk_frame_set_shadow_type(GTK_FRAME(window), GTK_SHADOW_NONE);
-
-	window->_hbox = GTK_BOX (gtk_hbox_new (FALSE, 0));
-	gtk_container_add (GTK_CONTAINER (window), GTK_WIDGET (window->_hbox));
-
-	g_signal_connect (G_OBJECT (window), "expose-event", G_CALLBACK (shell_window_paint_window),
-		NULL);
-	window->resize_handler_id =
-		g_signal_connect (G_OBJECT (window), "size-request",
-		G_CALLBACK (shell_window_handle_size_request), app_data);
-
-	return GTK_WIDGET (window);
-}
-
 void
 shell_window_clear_resize_handler (ShellWindow * win)
 {
-	if (win->resize_handler_id)
-	{
-		g_signal_handler_disconnect (win, win->resize_handler_id);
-		win->resize_handler_id = 0;
-	}
-}
-
-/* We want the window to come up with proper runtime calculated width ( ie taking into account font size, locale, ...) so
-   we can't hard code a size. But since ScrolledWindow returns basically zero for it's size request we need to
-   grab the "real" desired width. Once it's shown though we want to allow the user to size down if they want too, so
-   we unhook this function
-*/
-static void
-shell_window_handle_size_request (GtkWidget * widget, GtkRequisition * requisition,
-	AppShellData * app_data)
-{
-	GtkRequisition child_requisition;
-	gint height;
-
-	/*
-	Fixme - counting on this being called after the real size request is done.
-	seems to be that way but I don't know why. I would think I would need to explictly call it here first
-	printf("Enter - shell_window_handle_size_request\n");
-	printf("passed in width:%d, height:%d\n", requisition->width, requisition->height);
-	printf("left side width:%d\n", SHELL_WINDOW(widget)->_left_pane->requisition.width);
-	printf("right side width:%d\n", GTK_WIDGET(APP_RESIZER(app_data->category_layout)->child)->requisition.width);
-	*/
-
-	gtk_widget_get_requisition (GTK_WIDGET (APP_RESIZER (app_data->category_layout)->child),
-	                            &child_requisition);
-	requisition->width += child_requisition.width;
-
-	/* use the left side as a minimum height, if the right side is taller,
-	   use it up to SIZING_HEIGHT_PERCENT of the screen height
-	*/
-	height = child_requisition.height + 10;
-	if (height > requisition->height)
-	{
-		requisition->height =
-			MIN (((gfloat) gdk_screen_height () * SIZING_HEIGHT_PERCENT), height);
-	}
 }
 
 void
@@ -130,26 +101,20 @@ shell_window_set_contents (ShellWindow * shell, GtkWidget * left_pane, GtkWidget
 	gtk_container_add (GTK_CONTAINER (shell->_right_pane), right_pane);
 }
 
-gboolean
-shell_window_paint_window (GtkWidget * widget, GdkEventExpose * event, gpointer data)
+GtkWidget *
+shell_window_new (AppShellData * app_data)
 {
-	GtkWidget *left_pane, *right_pane;
-	GtkAllocation allocation;
+	ShellWindow *window = g_object_new (SHELL_WINDOW_TYPE, NULL);
 
-	left_pane = SHELL_WINDOW (widget)->_left_pane;
-	right_pane = SHELL_WINDOW (widget)->_right_pane;
+	window->data = app_data;
 
-	gtk_widget_get_allocation (left_pane, &allocation);
+	gtk_widget_set_app_paintable (GTK_WIDGET (window), TRUE);
+	gtk_frame_set_shadow_type(GTK_FRAME(window), GTK_SHADOW_NONE);
 
-#ifdef PORTING_MORE
-	/* draw left pane background */
-	gtk_paint_flat_box (gtk_widget_get_style (widget),
-	                    gtk_widget_get_window (widget),
-	                    gtk_widget_get_state (widget),
-	                    GTK_SHADOW_NONE, NULL, widget, "",
-	                    allocation.x, allocation.y,
-	                    allocation.width, allocation.height);
-#endif
+	window->_hbox = GTK_BOX (gtk_box_new (FALSE, 0));
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (window->_hbox),
+					GTK_ORIENTATION_HORIZONTAL);
+	gtk_container_add (GTK_CONTAINER (window), GTK_WIDGET (window->_hbox));
 
-	return FALSE;
+	return GTK_WIDGET (window);
 }

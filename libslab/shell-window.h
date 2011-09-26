@@ -45,6 +45,7 @@ struct _ShellWindow
 	GtkBox *_hbox;
 	GtkWidget *_left_pane;
 	GtkWidget *_right_pane;
+	AppShellData *data;
 
 	gulong resize_handler_id;
 };

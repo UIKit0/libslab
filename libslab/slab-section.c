@@ -22,106 +22,17 @@
 
 G_DEFINE_TYPE (SlabSection, slab_section, GTK_TYPE_BOX)
 
-static void slab_section_finalize (GObject *);
-
-static void slab_section_class_init (SlabSectionClass * slab_section_class)
-{
-	GObjectClass *g_obj_class = G_OBJECT_CLASS (slab_section_class);
-
-	g_obj_class->finalize = slab_section_finalize;
-}
-
-static void
-slab_section_init (SlabSection * section)
-{
-	section->title = NULL;
-	section->contents = NULL;
-	gtk_orientable_set_orientation (GTK_ORIENTABLE (section),
-					GTK_ORIENTATION_VERTICAL);
-}
-
-static void
-slab_section_finalize (GObject * obj)
-{
-	g_assert (IS_SLAB_SECTION (obj));
-	(*G_OBJECT_CLASS (slab_section_parent_class)->finalize) (obj);
-}
-
-static void
-slab_section_set_title_color (GtkWidget * widget)
-{
-	GtkStyle *style;
-
-	g_warning ("set_title_color");
-#ifdef PORTING_MORE
-	style = gtk_widget_get_style (widget);
-
-	switch (SLAB_SECTION (widget)->style)
-	{
-	case Style1:
-		gtk_widget_modify_fg (SLAB_SECTION (widget)->title, GTK_STATE_NORMAL,
-		                      &style->bg[GTK_STATE_SELECTED]);
-		break;
-	case Style2:
-		if (SLAB_SECTION (widget)->selected)
-			gtk_widget_modify_fg (SLAB_SECTION (widget)->title, GTK_STATE_NORMAL,
-			                      &style->dark[GTK_STATE_SELECTED]);
-		else
-			gtk_widget_modify_fg (SLAB_SECTION (widget)->title, GTK_STATE_NORMAL,
-			                      &style->text[GTK_STATE_INSENSITIVE]);
-		break;
-	default:
-		g_assert_not_reached ();
-	}
-#endif
-}
-
-static void
-slab_section_style_set (GtkWidget * widget, GtkStyle * prev_style, gpointer user_data)
-{
-	static gboolean recursively_entered = FALSE;
-	if (!recursively_entered)
-	{
-		recursively_entered = TRUE;
-
-		slab_section_set_title_color (widget);
-
-		recursively_entered = FALSE;
-	}
-}
-
-/*
-gboolean
-slab_section_expose_event (GtkWidget * widget, GdkEventExpose * event, gpointer data)
-{
-	gdk_draw_rectangle (widget->window, widget->style->light_gc[GTK_STATE_SELECTED], TRUE,
-		widget->allocation.x, widget->allocation.y,
-		widget->allocation.width + 40, widget->allocation.height);
-
-	return FALSE;
-}
-*/
-
 void
 slab_section_set_selected (SlabSection * section, gboolean selected)
 {
 	if (selected == section->selected)
 		return;
 	section->selected = selected;
+	gtk_widget_queue_draw (GTK_WIDGET (section));
 
-	/*
-	   if(selected)
-	   {
-	   section->expose_handler_id = g_signal_connect(G_OBJECT(section),
-	   "expose-event", G_CALLBACK(slab_section_expose_event), NULL);
-	   }
-	   else
-	   {
-	   g_signal_handler_disconnect(section, section->expose_handler_id);
-	   }
-	 */
-
-	slab_section_set_title_color (GTK_WIDGET (section));
+	g_warning ("TESTME: side-bar / section title_color %d", selected);
+	gtk_widget_set_state (section->title,
+			      selected ? GTK_STATE_SELECTED : GTK_STATE_NORMAL);
 }
 
 GtkWidget *
@@ -164,8 +75,6 @@ slab_section_new_with_markup (const gchar * title_markup, SlabStyle style)
 	gtk_misc_set_alignment (GTK_MISC (section->title), 0.0, 0.5);
 
 	gtk_widget_set_name (GTK_WIDGET (section), widget_theming_name);
-	g_signal_connect (G_OBJECT (section), "style-set", G_CALLBACK (slab_section_style_set),
-		NULL);
 
 	gtk_box_pack_start (section->childbox, section->title, FALSE, FALSE, 0);
 
@@ -202,4 +111,59 @@ slab_section_set_contents (SlabSection * section, GtkWidget * contents)
 	section->contents = contents;
 
 	gtk_box_pack_start (section->childbox, contents, FALSE, FALSE, 0);
+}
+
+static gboolean
+slab_section_draw (GtkWidget *widget, cairo_t *cr)
+{
+	SlabSection *section = SLAB_SECTION (widget);
+
+	GTK_WIDGET_CLASS (slab_section_parent_class)->draw (widget, cr);
+
+	g_warning ("TESTME: slab section draw - not so hot !");
+	if (section->selected)
+	{
+		GdkRGBA rgba;
+		GtkAllocation allocation;
+		GtkStyleContext *context;
+
+		g_warning ("TESTME: render slab section selected");
+
+		gtk_widget_get_allocation (widget, &allocation);
+
+		/* set the correct source color */
+		context = gtk_widget_get_style_context (widget);
+		gtk_style_context_get_color (context, GTK_STATE_SELECTED, &rgba);
+		gdk_cairo_set_source_rgba (cr, &rgba);
+
+		cairo_rectangle (cr, allocation.x, allocation.y,
+				 allocation.width, allocation.height);
+	}
+
+	return FALSE;
+}
+
+static void
+slab_section_finalize (GObject * obj)
+{
+	g_assert (IS_SLAB_SECTION (obj));
+	(*G_OBJECT_CLASS (slab_section_parent_class)->finalize) (obj);
+}
+
+static void slab_section_class_init (SlabSectionClass * slab_section_class)
+{
+	GObjectClass *g_obj_class = G_OBJECT_CLASS (slab_section_class);
+
+	g_obj_class->finalize = slab_section_finalize;
+
+	GTK_WIDGET_CLASS (slab_section_class)->draw = slab_section_draw;
+}
+
+static void
+slab_section_init (SlabSection * section)
+{
+	section->title = NULL;
+	section->contents = NULL;
+	gtk_orientable_set_orientation (GTK_ORIENTABLE (section),
+					GTK_ORIENTATION_VERTICAL);
 }
