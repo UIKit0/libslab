@@ -250,10 +250,9 @@ app_resizer_draw (GtkWidget * widget, cairo_t *cr)
 	printf("Allocation:%d, %d, %d, %d\n\n", widget->allocation.x, widget->allocation.y, widget->allocation.width, widget->allocation.height);
 	*/
 
-	GTK_WIDGET_CLASS (app_resizer_parent_class)->draw (widget, cr);
-
 	g_warning ("TESTME: do I render the selected group nicely !?");
 
+#if 0
 	if (app_data->selected_group)
 	{
 		GdkRGBA rgba;
@@ -267,11 +266,21 @@ app_resizer_draw (GtkWidget * widget, cairo_t *cr)
 		/* set the correct source color */
 		context = gtk_widget_get_style_context (widget);
 		gtk_style_context_get_color (context, GTK_STATE_SELECTED, &rgba);
+		rgba.alpha = 0.2;
 		gdk_cairo_set_source_rgba (cr, &rgba);
 
+		cairo_save (cr);
+
+//		gtk_cairo_transform_to_window (cr, widget, gtk_widget_get_window (widget));
 		cairo_rectangle (cr, selected_allocation.x, selected_allocation.y,
 				 allocation.width, selected_allocation.height);
+		cairo_fill (cr);
+
+		cairo_restore (cr);
 	}
+#endif
+
+	GTK_WIDGET_CLASS (app_resizer_parent_class)->draw (widget, cr);
 
 	return FALSE;
 }

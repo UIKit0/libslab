@@ -28,11 +28,7 @@ slab_section_set_selected (SlabSection * section, gboolean selected)
 	if (selected == section->selected)
 		return;
 	section->selected = selected;
-	gtk_widget_queue_draw (GTK_WIDGET (section));
-
-	g_warning ("TESTME: side-bar / section title_color %d", selected);
-	gtk_widget_set_state (section->title,
-			      selected ? GTK_STATE_SELECTED : GTK_STATE_NORMAL);
+	gtk_widget_set_sensitive (section->title, selected);
 }
 
 GtkWidget *
@@ -71,6 +67,7 @@ slab_section_new_with_markup (const gchar * title_markup, SlabStyle style)
 	gtk_container_add (GTK_CONTAINER (align), GTK_WIDGET (section->childbox));
 
 	section->title = gtk_label_new (title_markup);
+	gtk_widget_set_sensitive (section->title, FALSE);
 	gtk_label_set_use_markup (GTK_LABEL (section->title), TRUE);
 	gtk_misc_set_alignment (GTK_MISC (section->title), 0.0, 0.5);
 
@@ -118,27 +115,32 @@ slab_section_draw (GtkWidget *widget, cairo_t *cr)
 {
 	SlabSection *section = SLAB_SECTION (widget);
 
-	GTK_WIDGET_CLASS (slab_section_parent_class)->draw (widget, cr);
-
-	g_warning ("TESTME: slab section draw - not so hot !");
+#if 1
 	if (section->selected)
 	{
 		GdkRGBA rgba;
 		GtkAllocation allocation;
 		GtkStyleContext *context;
 
-		g_warning ("TESTME: render slab section selected");
-
 		gtk_widget_get_allocation (widget, &allocation);
 
 		/* set the correct source color */
 		context = gtk_widget_get_style_context (widget);
 		gtk_style_context_get_color (context, GTK_STATE_SELECTED, &rgba);
+		rgba.alpha = 0.2;
 		gdk_cairo_set_source_rgba (cr, &rgba);
 
+		g_warning ("TESTME: render slab section selected %d %d %d %d",
+			   allocation.x, allocation.y,
+			   allocation.width * 2, allocation.height);
+
 		cairo_rectangle (cr, allocation.x, allocation.y,
-				 allocation.width, allocation.height);
+				 allocation.width * 2, allocation.height);
+		cairo_fill (cr);
 	}
+#endif
+
+	GTK_WIDGET_CLASS (slab_section_parent_class)->draw (widget, cr);
 
 	return FALSE;
 }
